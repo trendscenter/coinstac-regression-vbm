@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "name": "decentralized regression normal equation demo",
+    "id": "drne_test",
+    "version": "v1.0.0",
+    "repository": "https:\/\/github.com\/hvgazula\/drne_test",
+    "description": "a test from decentralized regression normal equation"
+  },
+  "computation": {
+    "type": "docker",
+    "dockerImage": "drne_test",
+    "command": [
+      "python",
+      "\/computation\/local.py"
+    ],
+    "remote": {
+      "type": "docker",
+      "dockerImage": "drne_test",
+      "command": [
+        "python",
+        "\/computation\/remote.py"
+      ]
+    },
+    "input": {
+      "covariates": {
+        "type": "array"
+      },
+      "dependents": {
+        "type": "array"
+      },
+      "lambda": {
+        "type": "number"
+      }
+    },
+    "output": {
+      "Beta": {
+        "type": "array"
+      }
+    }
+  }
+}
