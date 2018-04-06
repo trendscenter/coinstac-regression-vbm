@@ -23,8 +23,7 @@ def remote_0(args):
             "site_covar_list": site_labels,
             "computation_phase": "remote_0"
         },
-        "cache": {
-        }
+        "cache": {}
     }
 
     return json.dumps(computation_output_dict)
