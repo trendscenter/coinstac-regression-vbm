@@ -109,4 +109,6 @@ def vbm_parser(args):
     y_list = nifti_to_data(args, X_files, y_files)
     y = pd.DataFrame.from_records(y_list)
 
+    X.isControl = X.isControl.astype(int)  # need to generalize this line
+
     return (X, y)

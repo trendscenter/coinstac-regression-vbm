@@ -14,6 +14,15 @@ with warnings.catch_warnings():
     import statsmodels.api as sm
 
 
+def listRecursive(d, key):
+    for k, v in d.items():
+        if isinstance(v, dict):
+            for found in listRecursive(v, key):
+                yield found
+        if k == key:
+            yield v
+
+
 def one_shot_regression(X, y, lamb):
     """Performs ridge regression
 
