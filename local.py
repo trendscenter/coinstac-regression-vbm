@@ -17,20 +17,38 @@ with warnings.catch_warnings():
     import statsmodels.api as sm
 
 
-def local_1(args):
+def local_0(args):
     input_list = args["input"]
     lamb = input_list["lambda"]
 
     (X, y) = vbm_parser(args)
-    y = y.loc[:, 0:4]  # comment this line to demonstrate docker hanging
-    y_labels = ['{}_{}'.format('voxel', str(i)) for i in range(y.shape[1])]
+    y = y.loc[:, 0:9]  # comment this line to demonstrate docker hanging
+    y_labels = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
 
-    biased_X = sm.add_constant(X.values)
+    computation_output_dict = {
+        "output": {
+            "computation_phase": "local_0"
+        },
+        "cache": {
+            "covariates": X.values.tolist(),
+            "dependents": y.values.tolist(),
+            "lambda": lamb,
+            "y_labels": y_labels
+        },
+    }
 
-    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
-    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
+    return json.dumps(computation_output_dict)
 
-    beta_vector, meanY_vector, lenY_vector = [], [], []
+
+def local_1(args):
+    lamb = args["cache"]["lambda"]
+    X = args["cache"]["covariates"]
+    y = args["cache"]["dependents"]
+    y_labels = args["cache"]["y_labels"]
+    y = pd.DataFrame(y, columns=y_labels)
+
+    biased_X = sm.add_constant(X)
+    meanY_vector, lenY_vector = [], []
 
     local_params = []
     local_sse = []
@@ -39,9 +57,7 @@ def local_1(args):
     local_rsquared = []
 
     for column in y.columns:
-        curr_y = list(y[column])
-        beta = reg.one_shot_regression(biased_X, curr_y, lamb)
-        beta_vector.append(beta.tolist())
+        curr_y = y[column].values
         meanY_vector.append(np.mean(curr_y))
         lenY_vector.append(len(y))
 
@@ -64,6 +80,24 @@ def local_1(args):
         local_stats_dict = {key: value for key, value in zip(keys, values)}
         local_stats_list.append(local_stats_dict)
 
+    # +++++++++++++++++++++ Adding site covariate columns +++++++++++++++++++++
+    site_covar_list = args["input"]["site_covar_list"]
+
+    site_matrix = np.zeros(
+        (np.array(X).shape[0], len(site_covar_list)), dtype=int)
+    site_df = pd.DataFrame(site_matrix, columns=site_covar_list)
+
+    select_cols = [
+        col for col in site_df.columns if args["state"]["clientId"] in col
+    ]
+
+    site_df[select_cols] = 1
+    biased_X = np.concatenate((biased_X, site_df.values), axis=1)
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
+    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
+
     computation_output_dict = {
         "output": {
             "XtransposeX_local": XtransposeX_local.tolist(),
@@ -75,12 +109,11 @@ def local_1(args):
             "computation_phase": "local_1"
         },
         "cache": {
-            "covariates": X.values.tolist(),
+            "covariates": biased_X.tolist(),
             "dependents": y.values.tolist(),
             "lambda": lamb
         },
     }
-
     return json.dumps(computation_output_dict)
 
 
@@ -122,10 +155,9 @@ def local_2(args):
     mean_y_global = input_list["mean_y_global"]
 
     y = pd.DataFrame(y)
-
     SSE_local, SST_local = [], []
     for index, column in enumerate(y.columns):
-        curr_y = list(y[column])
+        curr_y = y[column].values
         SSE_local.append(
             reg.sum_squared_error(biased_X, curr_y, avg_beta_vector))
         SST_local.append(
@@ -152,6 +184,9 @@ if __name__ == '__main__':
     phase_key = list(reg.listRecursive(parsed_args, 'computation_phase'))
 
     if not phase_key:
+        computation_output = local_0(parsed_args)
+        sys.stdout.write(computation_output)
+    elif "remote_0" in phase_key:
         computation_output = local_1(parsed_args)
         sys.stdout.write(computation_output)
     elif "remote_1" in phase_key:

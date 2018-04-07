@@ -11,6 +11,25 @@ import numpy as np
 import regression as reg
 
 
+def remote_0(args):
+    input_list = args["input"]
+    site_ids = list(input_list.keys())
+    site_covar_list = [
+        '{}_{}'.format('site', label)
+        for index, label in enumerate(site_ids) if index
+    ]
+
+    computation_output_dict = {
+        "output": {
+            "site_covar_list": site_covar_list,
+            "computation_phase": "remote_0"
+        },
+        "cache": {}
+    }
+
+    return json.dumps(computation_output_dict)
+
+
 def remote_1(args):
     input_list = args["input"]
     userID = list(input_list)[0]
@@ -26,11 +45,12 @@ def remote_1(args):
 
     beta_vector_1 = sum(beta_vector_0)
 
-    avg_beta_vector = np.matrix.transpose(sum([
-        np.matmul(
-            sp.linalg.inv(beta_vector_1),
-            input_list[site]["Xtransposey_local"]) for site in input_list
-    ]))
+    avg_beta_vector = np.matrix.transpose(
+        sum([
+            np.matmul(
+                sp.linalg.inv(beta_vector_1), input_list[site][
+                    "Xtransposey_local"]) for site in input_list
+        ]))
 
     mean_y_local = [input_list[site]["mean_y_local"] for site in input_list]
     count_y_local = [
@@ -135,20 +155,20 @@ def remote_2(args):
     all_local_stats_dicts = list(map(list, zip(*all_local_stats_dicts)))
 
     a_dict = [{
-         key: value
-         for key, value in zip(sites, all_local_stats_dicts[i])
-     } for i in range(len(all_local_stats_dicts))]
+        key: value
+        for key, value in zip(sites, all_local_stats_dicts[i])
+    } for i in range(len(all_local_stats_dicts))]
 
     # Block of code to print just global stats
     keys1 = [
-         "avg_beta_vector", "r2_global", "ts_global", "ps_global", "dof_global"
-     ]
+        "avg_beta_vector", "r2_global", "ts_global", "ps_global", "dof_global"
+    ]
     global_dict_list = []
     for index, _ in enumerate(y_labels):
         values = [
-             avg_beta_vector[index], r_squared_global[index],
-             ts_global[index].tolist(), ps_global[index], dof_global[index]
-         ]
+            avg_beta_vector[index], r_squared_global[index],
+            ts_global[index].tolist(), ps_global[index], dof_global[index]
+        ]
         my_dict = {key: value for key, value in zip(keys1, values)}
         global_dict_list.append(my_dict)
 
@@ -167,10 +187,6 @@ def remote_2(args):
         "success": True
     }
 
-#    with open(os.path.join(args["state"]["outputDirectory"], 'data.txt'),
-#              'w') as outfile:
-#        json.dump(computation_output, outfile)
-
     return json.dumps(computation_output)
 
 
@@ -178,7 +194,11 @@ if __name__ == '__main__':
 
     parsed_args = json.loads(sys.argv[1])
     phase_key = list(reg.listRecursive(parsed_args, 'computation_phase'))
-    if "local_1" in phase_key:
+
+    if "local_0" in phase_key:
+        computation_output = remote_0(parsed_args)
+        sys.stdout.write(computation_output)
+    elif "local_1" in phase_key:
         computation_output = remote_1(parsed_args)
         sys.stdout.write(computation_output)
     elif "local_2" in phase_key:
