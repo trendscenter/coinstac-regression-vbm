@@ -13,14 +13,15 @@ import regression as reg
 
 def remote_0(args):
     input_list = args["input"]
-    site_labels = [
+    site_ids = list(input_list.keys())
+    site_covar_list = [
         '{}_{}'.format('site', label)
-        for index, label in enumerate(list(input_list)) if index
+        for index, label in enumerate(site_ids) if index
     ]
 
     computation_output_dict = {
         "output": {
-            "site_covar_list": site_labels,
+            "site_covar_list": site_covar_list,
             "computation_phase": "remote_0"
         },
         "cache": {}
@@ -185,10 +186,6 @@ def remote_2(args):
         },
         "success": True
     }
-
-    #    with open(os.path.join(args["state"]["outputDirectory"], 'data.txt'),
-    #              'w') as outfile:
-    #        json.dump(computation_output, outfile)
 
     return json.dumps(computation_output)
 

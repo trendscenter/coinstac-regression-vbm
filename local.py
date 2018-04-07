@@ -23,7 +23,7 @@ def local_0(args):
 
     (X, y) = vbm_parser(args)
     y = y.loc[:, 0:9]  # comment this line to demonstrate docker hanging
-    y_labels = ['{}_{}'.format('voxel', str(i)) for i in range(y.shape[1])]
+    y_labels = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
 
     computation_output_dict = {
         "output": {
@@ -47,8 +47,8 @@ def local_1(args):
     y_labels = args["cache"]["y_labels"]
     y = pd.DataFrame(y, columns=y_labels)
 
-    biased_X = sm.add_constant(np.array(X))
-    beta_vector, meanY_vector, lenY_vector = [], [], []
+    biased_X = sm.add_constant(X)
+    meanY_vector, lenY_vector = [], []
 
     local_params = []
     local_sse = []
@@ -57,9 +57,7 @@ def local_1(args):
     local_rsquared = []
 
     for column in y.columns:
-        curr_y = list(y[column])
-        beta = reg.one_shot_regression(biased_X, curr_y, lamb)
-        beta_vector.append(beta.tolist())
+        curr_y = y[column].values
         meanY_vector.append(np.mean(curr_y))
         lenY_vector.append(len(y))
 
@@ -159,7 +157,7 @@ def local_2(args):
     y = pd.DataFrame(y)
     SSE_local, SST_local = [], []
     for index, column in enumerate(y.columns):
-        curr_y = list(y[column])
+        curr_y = y[column].values
         SSE_local.append(
             reg.sum_squared_error(biased_X, curr_y, avg_beta_vector))
         SST_local.append(
