@@ -23,7 +23,7 @@ def local_0(args):
 
     (X, y) = vbm_parser(args)
     y = pd.DataFrame(
-        y.loc[:, 0])  # comment this line to demonstrate docker hanging
+        y.loc[:, 0:4])  # comment this line to demonstrate docker hanging
     y_labels = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
 
     computation_output_dict = {
@@ -154,8 +154,6 @@ def local_2(args):
 
     avg_beta_vector = input_list["avg_beta_vector"]
     mean_y_global = input_list["mean_y_global"]
-
-    raise Exception(mean_y_global, type(mean_y_global))
 
     y = pd.DataFrame(y)
     SSE_local, SST_local = [], []
