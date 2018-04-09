@@ -16,7 +16,7 @@ def parse_for_each_y(args, X_files, y_files, dependent):
         if file.split('-')[-1] in X_files:
             with open(
                     os.path.join(args["state"]["baseDirectory"],
-                                 file.split('-')[-1])) as fh:
+                                 file)) as fh:
                 for line in fh:
                     if line.startswith(dependent[0]):
                         y.append(float(line.split('\t')[1]))
@@ -57,8 +57,8 @@ def fsl_parser(args):
     X[result] = (X[result] == 'True').astype(int)
     X = X.apply(pd.to_numeric, errors='ignore')
 
-    y_files = y_info[0][0]
-    y_labels = y_info[1][0]
+    y_files = y_info[0]
+    y_labels = y_info[2]
 
     y_list = parse_for_y_array(args, X_files, y_files, y_labels)
     y = pd.DataFrame.from_records(y_list, columns=y_labels)

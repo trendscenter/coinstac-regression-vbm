@@ -155,6 +155,8 @@ def local_2(args):
     avg_beta_vector = input_list["avg_beta_vector"]
     mean_y_global = input_list["mean_y_global"]
 
+    raise Exception(mean_y_global, type(mean_y_global))
+
     y = pd.DataFrame(y)
     SSE_local, SST_local = [], []
     for index, column in enumerate(y.columns):
