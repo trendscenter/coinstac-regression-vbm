@@ -22,8 +22,7 @@ def local_0(args):
     lamb = input_list["lambda"]
 
     (X, y) = vbm_parser(args)
-    y = pd.DataFrame(
-        y.loc[:, 0:4])  # comment this line to demonstrate docker hanging
+    y = y.loc[:, 0:1000]  # comment this line to run on all voxels
     y_labels = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
 
     computation_output_dict = {
@@ -181,7 +180,7 @@ def local_2(args):
 
 if __name__ == '__main__':
 
-    parsed_args = json.loads(sys.argv[1])
+    parsed_args = json.loads(sys.stdin.read())
     phase_key = list(reg.listRecursive(parsed_args, 'computation_phase'))
 
     if not phase_key:
