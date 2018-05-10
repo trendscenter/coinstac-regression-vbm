@@ -9,6 +9,7 @@ import sys
 import scipy as sp
 import numpy as np
 import regression as reg
+from remote_ancillary import get_stats_to_dict, print_pvals, print_beta_images
 
 
 def remote_0(args):
@@ -144,10 +145,15 @@ def remote_2(args):
     for i in range(len(MSE)):
         var_covar_beta_global = MSE[i] * sp.linalg.inv(varX_matrix_global)
         se_beta_global = np.sqrt(var_covar_beta_global.diagonal())
-        ts = avg_beta_vector[i] / se_beta_global
+        ts = (avg_beta_vector[i] / se_beta_global).tolist()
         ps = reg.t_to_p(ts, dof_global[i])
         ts_global.append(ts)
         ps_global.append(ps)
+
+    # Begin nibabel code#
+    print_pvals(args, ps_global, ts_global)
+    print_beta_images(args, avg_beta_vector)
+    # End nibabel code#
 
     # Block of code to print local stats as well
     sites = ['Site_' + str(i) for i in range(len(all_local_stats_dicts))]
