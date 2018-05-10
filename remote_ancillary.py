@@ -51,8 +51,6 @@ def print_pvals(args, ps_global, ts_global):
     mask_file = os.path.join(args["state"]["baseDirectory"], 'mask_6mm.nii')
     mask = nib.load(mask_file)
 
-    raise Exception(p_df.columns)
-
     for column in p_df.columns:
         new_data = np.zeros(mask.shape)
         new_data[mask.get_data() >

@@ -84,7 +84,7 @@ def vbm_parser(args):
 
     X_data = X_info[0][0]
     X_labels = X_info[1]
-    #    X_types = X_info[2]
+    X_types = X_info[2]
 
     X_df = pd.DataFrame.from_records(X_data)
     X_df.columns = X_df.iloc[0]

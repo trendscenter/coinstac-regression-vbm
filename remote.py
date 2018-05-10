@@ -160,38 +160,25 @@ def remote_2(args):
 
     all_local_stats_dicts = list(map(list, zip(*all_local_stats_dicts)))
 
-    a_dict = [{
-        key: value
-        for key, value in zip(sites, all_local_stats_dicts[i])
-    } for i in range(len(all_local_stats_dicts))]
+    a_dict = [{key: value
+               for key, value in zip(sites, stats_dict)}
+              for stats_dict in all_local_stats_dicts]
 
     # Block of code to print just global stats
     keys1 = [
         "avg_beta_vector", "r2_global", "ts_global", "ps_global", "dof_global"
     ]
-    global_dict_list = []
-    for index, _ in enumerate(y_labels):
-        values = [
-            avg_beta_vector[index], r_squared_global[index],
-            ts_global[index].tolist(), ps_global[index], dof_global[index]
-        ]
-        my_dict = {key: value for key, value in zip(keys1, values)}
-        global_dict_list.append(my_dict)
+    global_dict_list = get_stats_to_dict(keys1, avg_beta_vector,
+                                         r_squared_global, ts_global,
+                                         ps_global, dof_global)
 
     # Print Everything
-    dict_list = []
     keys2 = ["ROI", "global_stats", "local_stats"]
-    for index, label in enumerate(y_labels):
-        values = [label, global_dict_list[index], a_dict[index]]
-        my_dict = {key: value for key, value in zip(keys2, values)}
-        dict_list.append(my_dict)
+    dict_list = get_stats_to_dict(keys2, y_labels, global_dict_list, a_dict)
 
-    computation_output = {
-        "output": {
-            "regressions": dict_list
-        },
-        "success": True
-    }
+    output_dict = {"regressions": dict_list}
+
+    computation_output = {"output": output_dict, "success": True}
 
     return json.dumps(computation_output)
 
