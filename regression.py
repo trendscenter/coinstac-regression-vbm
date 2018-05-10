@@ -13,11 +13,13 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
+np.seterr(all='ignore')
 
-def listRecursive(d, key):
+
+def list_recursive(d, key):
     for k, v in d.items():
         if isinstance(v, dict):
-            for found in listRecursive(v, key):
+            for found in list_recursive(v, key):
                 yield found
         if k == key:
             yield v
