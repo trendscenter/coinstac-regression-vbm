@@ -10,31 +10,25 @@ import pandas as pd
 import nibabel as nib
 
 
-def parse_for_each_y(args, X_files, y_files, dependent):
-    y = []
+def parse_for_y(args, X_files, y_files, y_labels):
+    """Read contents of fsl files into a dataframe"""
+    y = pd.DataFrame(index=y_labels)
+
     for file in y_files:
-        if file.split('-')[-1] in X_files:
-            with open(
-                    os.path.join(args["state"]["baseDirectory"],
-                                 file)) as fh:
-                for line in fh:
-                    if line.startswith(dependent[0]):
-                        y.append(float(line.split('\t')[1]))
+        if any([curr_X_file in file for curr_X_file in X_files]):
+            y_ = pd.read_csv(
+                os.path.join(args["state"]["baseDirectory"], file), sep='\t')
+            y_.set_index('Measure:volume', inplace=True)
+            y = pd.merge(y, y_, how='left', left_index=True, right_index=True)
+
+    y = y.T
 
     return y
 
 
-def parse_for_y_array(args, X_files, y_files, y_labels):
-    y_array = []
-    for region in y_labels:
-        y_array.append(parse_for_each_y(args, X_files, y_files, region))
-
-    y_array = list(map(list, zip(*y_array)))
-
-    return y_array
-
-
 def fsl_parser(args):
+    """Parse the freesurfer (fsl) specific inputspec.json and return the
+    covariate matrix (X) as well the dependent matrix (y) as dataframes"""
     input_list = args["input"]
     X_info = input_list["covariates"]
     y_info = input_list["data"]
@@ -44,31 +38,27 @@ def fsl_parser(args):
     X_types = X_info[2]
 
     X_df = pd.DataFrame.from_records(X_data)
+
     X_df.columns = X_df.iloc[0]
     X_df = X_df.reindex(X_df.index.drop(0))
-
     X_files = list(X_df['freesurferfile'])
 
     X = X_df[X_labels]
-    xs = X_labels
-    ys = X_types
-    result = [x for x, y in zip(xs, ys) if y == 'boolean']
-    pd.options.mode.chained_assignment = None  # default='warn'
-    X[result] = (X[result] == 'True').astype(int)
     X = X.apply(pd.to_numeric, errors='ignore')
+    X = X * 1
 
     y_files = y_info[0]
     y_labels = y_info[2]
 
-    y_list = parse_for_y_array(args, X_files, y_files, y_labels)
-    y = pd.DataFrame.from_records(y_list, columns=y_labels)
+    y = parse_for_y(args, X_files, y_files, y_labels)
 
-    return (
-        X, y, y_labels
-    )  # Ask about labels being available at this level without being passed around
+    X = X.reindex(sorted(X.columns), axis=1)
+
+    return (X, y)
 
 
 def nifti_to_data(args, X_files, y_files):
+    """Read nifti files as matrices"""
     mask_file = os.path.join(args["state"]["baseDirectory"], 'mask_6mm.nii')
     mask_data = nib.load(mask_file).get_data()
 
@@ -86,6 +76,8 @@ def nifti_to_data(args, X_files, y_files):
 
 
 def vbm_parser(args):
+    """Parse the nifti (.nii) specific inputspec.json and return the
+    covariate matrix (X) as well the dependent matrix (y) as dataframes"""
     input_list = args["input"]
     X_info = input_list["covariates"]
     y_info = input_list["data"]
@@ -103,12 +95,13 @@ def vbm_parser(args):
     X = X_df[X_labels]
     X = X.apply(pd.to_numeric, errors='ignore')
     X = pd.get_dummies(X, drop_first=True)
+    X = X * 1
 
     y_files = y_info[0]
 
     y_list = nifti_to_data(args, X_files, y_files)
     y = pd.DataFrame.from_records(y_list)
 
-    X.isControl = X.isControl.astype(int)  # need to generalize this line
+    y.columns = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
 
     return (X, y)

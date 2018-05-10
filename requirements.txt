@@ -1,5 +1,10 @@
+matplotlib
+nibabel
+nilearn
+numba
 numpy
 pandas
+scikit-learn
 scipy
 statsmodels
-nibabel
+ujson
