@@ -20,8 +20,8 @@ def get_stats_to_dict(a, *b):
     return dict_list
 
 
-def print_beta_images(args, avg_beta_vector):
-    beta_df = pd.DataFrame(avg_beta_vector)
+def print_beta_images(args, avg_beta_vector, X_labels):
+    beta_df = pd.DataFrame(avg_beta_vector, columns=X_labels)
 
     images_folder = args["state"]["outputDirectory"]
 
@@ -41,9 +41,9 @@ def print_beta_images(args, avg_beta_vector):
             colorbar=True)
 
 
-def print_pvals(args, ps_global, ts_global):
-    p_df = pd.DataFrame(ps_global)
-    t_df = pd.DataFrame(ts_global)
+def print_pvals(args, ps_global, ts_global, X_labels):
+    p_df = pd.DataFrame(ps_global, columns=X_labels)
+    t_df = pd.DataFrame(ts_global, columns=X_labels)
 
     # TODO manual entry, remove later
     images_folder = args["state"]["outputDirectory"]

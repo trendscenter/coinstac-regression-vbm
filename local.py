@@ -11,7 +11,7 @@ import sys
 import regression as reg
 from parsers import vbm_parser
 from local_ancillary import add_site_covariates
-from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
+from local_ancillary import mean_and_len_y, local_stats_to_dict_numba, print_pvals, print_beta_images
 
 
 def local_0(args):
@@ -41,9 +41,12 @@ def local_1(args):
 
     meanY_vector, lenY_vector = mean_and_len_y(y)
 
-    _, local_stats_list = local_stats_to_dict_numba(X, y)
+    _, local_stats_list = local_stats_to_dict_numba(args, X, y)
 
     augmented_X = add_site_covariates(args, X)
+
+    X_labels = list(augmented_X.columns)
+
     biased_X = augmented_X.values
 
     XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
@@ -56,6 +59,7 @@ def local_1(args):
             "mean_y_local": meanY_vector,
             "count_local": lenY_vector,
             "local_stats_list": local_stats_list,
+            "X_labels": X_labels,
             "y_labels": y_labels,
             "computation_phase": "local_1"
         },

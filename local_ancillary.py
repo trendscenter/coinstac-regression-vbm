@@ -5,8 +5,11 @@ Created on Wed Apr 11 22:28:11 2018
 
 @author: Harshvardhan
 """
-
+import base64
+import nibabel as nib
+from nilearn import plotting
 import numpy as np
+import os
 import pandas as pd
 import scipy as sp
 import warnings
@@ -61,26 +64,92 @@ def gather_local_stats(X, y):
     return (params, sse, tvalues, rsquared, dof_global)
 
 
-def local_stats_to_dict_numba(X, y):
+def print_beta_images(args, avg_beta_vector, X_labels):
+    beta_df = pd.DataFrame(avg_beta_vector, columns=X_labels)
+
+    images_folder = args["state"]["outputDirectory"]
+
+    mask_file = os.path.join(args["state"]["baseDirectory"], 'mask_6mm.nii')
+    mask = nib.load(mask_file)
+
+    for column in beta_df.columns:
+        new_data = np.zeros(mask.shape)
+        new_data[mask.get_data() > 0] = beta_df[column]
+
+        clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
+
+        plotting.plot_stat_map(
+            clipped_img,
+            output_file=os.path.join(images_folder, 'beta_' + str(column)),
+            display_mode='ortho',
+            colorbar=True)
+
+
+def print_pvals(args, ps_global, ts_global, X_labels):
+    p_df = pd.DataFrame(ps_global, columns=X_labels)
+    t_df = pd.DataFrame(ts_global, columns=X_labels)
+
+    # TODO manual entry, remove later
+    images_folder = args["state"]["outputDirectory"]
+
+    mask_file = os.path.join(args["state"]["baseDirectory"], 'mask_6mm.nii')
+    mask = nib.load(mask_file)
+
+    for column in p_df.columns:
+        new_data = np.zeros(mask.shape)
+        new_data[mask.get_data() >
+                 0] = -1 * np.log10(p_df[column]) * np.sign(t_df[column])
+
+        clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
+
+        #        thresholdh = max(np.abs(p_df[column]))
+
+        plotting.plot_stat_map(
+            clipped_img,
+            output_file=os.path.join(images_folder, 'pval_' + str(column)),
+            display_mode='ortho',
+            colorbar=True)
+
+
+def local_stats_to_dict_numba(args, X, y):
     """Wrap local statistics into a dictionary to be sent to the remote"""
-    X1 = sm.add_constant(X).values.astype('float64')
+    X1 = sm.add_constant(X)
+    X_labels = list(X1.columns)
+
+    X1 = X1.values.astype('float64')
     y1 = y.values.astype('float64')
 
     params, sse, tvalues, rsquared, dof_global = gather_local_stats(X1, y1)
 
     pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
 
-    keys = ["beta", "sse", "pval", "tval", "rsquared"]
-
-    values1 = pd.DataFrame(
-        list(
-            zip(params.T.tolist(), sse.tolist(), pvalues.T.tolist(),
-                tvalues.T.tolist(), rsquared.tolist())),
-        columns=keys)
-
-    local_stats_list = values1.to_dict(orient='records')
+#    keys = ["beta", "sse", "pval", "tval", "rsquared"]
+#
+#    values1 = pd.DataFrame(
+#        list(
+#            zip(params.T.tolist(), sse.tolist(), pvalues.T.tolist(),
+#                tvalues.T.tolist(), rsquared.tolist())),
+#        columns=keys)
+#
+#    local_stats_list = values1.to_dict(orient='records')
 
     beta_vector = params.T.tolist()
+
+    print_pvals(args, pvalues.T, tvalues.T, X_labels)
+    print_beta_images(args, beta_vector, X_labels)
+
+    # Begin code to serialize png images
+    png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
+
+    encoded_png_files = []
+    for file in png_files:
+        if file.endswith('.png'):
+            mrn_image = os.path.join(args["state"]["outputDirectory"], file)
+            with open(mrn_image, "rb") as imageFile:
+                mrn_image_str = base64.b64encode(imageFile.read())
+            encoded_png_files.append(mrn_image_str)
+
+    local_stats_list = dict(zip(png_files, encoded_png_files))
 
     return beta_vector, local_stats_list
 

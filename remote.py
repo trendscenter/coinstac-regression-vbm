@@ -4,11 +4,13 @@
 This script includes the remote computations for single-shot ridge
 regression with decentralized statistic calculation
 """
-import ujson as json
+import base64
+import numpy as np
+import os
+import regression as reg
 import sys
 import scipy as sp
-import numpy as np
-import regression as reg
+import ujson as json
 from remote_ancillary import get_stats_to_dict, print_pvals, print_beta_images
 
 
@@ -34,6 +36,8 @@ def remote_0(args):
 def remote_1(args):
     input_list = args["input"]
     userID = list(input_list)[0]
+
+    X_labels = input_list[userID]["X_labels"]
     y_labels = input_list[userID]["y_labels"]
 
     all_local_stats_dicts = [
@@ -72,6 +76,7 @@ def remote_1(args):
             "avg_beta_vector": avg_beta_vector.tolist(),
             "mean_y_global": mean_y_global.tolist(),
             "dof_global": dof_global.tolist(),
+            "X_labels": X_labels,
             "y_labels": y_labels,
             "local_stats_dict": all_local_stats_dicts
         }
@@ -121,7 +126,9 @@ def remote_2(args):
 
     """
     input_list = args["input"]
-    y_labels = args["cache"]["y_labels"]
+
+    X_labels = args["cache"]["X_labels"]
+
     all_local_stats_dicts = args["cache"]["local_stats_dict"]
 
     cache_list = args["cache"]
@@ -150,33 +157,32 @@ def remote_2(args):
         ts_global.append(ts)
         ps_global.append(ps)
 
-    # Begin nibabel code#
-    print_pvals(args, ps_global, ts_global)
-    print_beta_images(args, avg_beta_vector)
-    # End nibabel code#
+    print_pvals(args, ps_global, ts_global, X_labels)
+    print_beta_images(args, avg_beta_vector, X_labels)
+
+    # Begin code to serialize png images
+    png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
+
+    encoded_png_files = []
+    for file in png_files:
+        if file.endswith('.png'):
+            mrn_image = os.path.join(args["state"]["outputDirectory"], file)
+            with open(mrn_image, "rb") as imageFile:
+                mrn_image_str = base64.b64encode(imageFile.read())
+            encoded_png_files.append(mrn_image_str)
+    # End code to serialize png images
 
     # Block of code to print local stats as well
-    sites = ['Site_' + str(i) for i in range(len(all_local_stats_dicts))]
+    sites = [site for site in input_list]
 
-    all_local_stats_dicts = list(map(list, zip(*all_local_stats_dicts)))
-
-    a_dict = [{key: value
-               for key, value in zip(sites, stats_dict)}
-              for stats_dict in all_local_stats_dicts]
+    all_local_stats_dicts = dict(zip(sites, all_local_stats_dicts))
 
     # Block of code to print just global stats
-    keys1 = [
-        "avg_beta_vector", "r2_global", "ts_global", "ps_global", "dof_global"
-    ]
-    global_dict_list = get_stats_to_dict(keys1, avg_beta_vector,
-                                         r_squared_global, ts_global,
-                                         ps_global, dof_global)
+    global_dict_list = dict(zip(png_files, encoded_png_files))
 
     # Print Everything
-    keys2 = ["ROI", "global_stats", "local_stats"]
-    dict_list = get_stats_to_dict(keys2, y_labels, global_dict_list, a_dict)
-
-    output_dict = {"regressions": dict_list}
+    keys2 = ["global_stats", "local_stats"]
+    output_dict = dict(zip(keys2, [global_dict_list, all_local_stats_dicts]))
 
     computation_output = {"output": output_dict, "success": True}
 
