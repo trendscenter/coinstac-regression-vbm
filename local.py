@@ -4,6 +4,9 @@
 This script includes the local computations for decentralized regression with
 normal equation including decentralized statistic calculation
 """
+import warnings
+warnings.simplefilter("ignore")
+
 import ujson as json
 import numpy as np
 import pandas as pd
@@ -11,7 +14,7 @@ import sys
 import regression as reg
 from parsers import vbm_parser
 from local_ancillary import add_site_covariates
-from local_ancillary import mean_and_len_y, local_stats_to_dict_numba, print_pvals, print_beta_images
+from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
 
 
 def local_0(args):
