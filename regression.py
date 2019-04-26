@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This module contains functions to perform ridge regression and other relevant
+This module contains functions to perform decentralized regression and other relevant
 functions including calculation of the coefficient of determination R^2 and
 t-value
 """

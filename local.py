@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-This script includes the local computations for decentralized regression with
-normal equation including decentralized statistic calculation
+This script includes the local computations for decentralized regression
+(normal equation) including decentralized statistic calculation
 """
 import warnings
 warnings.simplefilter("ignore")

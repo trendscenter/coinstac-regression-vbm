@@ -1,21 +1,21 @@
 {
   "meta": {
-    "name": "decentralized regression normal equation demo",
-    "id": "drne_vbm",
+    "name": "Decentralized Regression for VBM",
+    "id": "regression-vbm",
     "version": "v1.0.0",
-    "repository": "https:\/\/github.com\/hvgazula\/drne_test",
-    "description": "a test from decentralized regression normal equation"
+    "repository": "https:\/\/github.com\/hvgazula\/coinstac-regression-vbm",
+    "description": "Decentralized regression (normal equation) for VBM"
   },
   "computation": {
     "type": "docker",
-    "dockerImage": "drne_vbm",
+    "dockerImage": "regression-vbm",
     "command": [
       "python",
       "\/computation\/local.py"
     ],
     "remote": {
       "type": "docker",
-      "dockerImage": "drne_test",
+      "dockerImage": "regression-vbm",
       "command": [
         "python",
         "\/computation\/remote.py"

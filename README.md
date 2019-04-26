@@ -1,6 +1,6 @@
-# Decentralized Regression with Normal Equation for MCIC Data (coinstac_drne_vbm_mcic)
+# Decentralized Regression with Normal Equation for MCIC Data (coinstac-regression-vbm)
 
-This repository contains code for decentralized regression with normal equation (drne) that was shown to successfully work with the MCIC dataset on coinstac-simulator
+This repository contains code for decentralized regression (normal equation) that was shown to successfully work with the MCIC dataset on coinstac-simulator
 
 ## Getting Started
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-This script includes the remote computations for single-shot ridge
+This script includes the remote computations for decentralized
 regression with decentralized statistic calculation
 """
 import base64
@@ -11,7 +11,7 @@ import regression as reg
 import sys
 import scipy as sp
 import ujson as json
-from remote_ancillary import get_stats_to_dict, print_pvals, print_beta_images
+from remote_ancillary import print_pvals, print_beta_images
 
 
 def remote_0(args):
