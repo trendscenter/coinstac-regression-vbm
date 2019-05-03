@@ -4,14 +4,13 @@
 This script includes the remote computations for decentralized
 regression with decentralized statistic calculation
 """
-import base64
 import numpy as np
 import os
 import regression as reg
 import sys
 import scipy as sp
 import ujson as json
-from ancillary import print_pvals, print_beta_images
+from ancillary import print_pvals, print_beta_images, encode_png
 
 
 def remote_0(args):
@@ -168,25 +167,13 @@ def remote_2(args):
     print_pvals(args, ps_global, ts_global, X_labels)
     print_beta_images(args, avg_beta_vector, X_labels)
 
-    # Begin code to serialize png images
-    png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
-
-    encoded_png_files = []
-    for file in png_files:
-        if file.endswith('.png'):
-            mrn_image = os.path.join(args["state"]["outputDirectory"], file)
-            with open(mrn_image, "rb") as imageFile:
-                mrn_image_str = base64.b64encode(imageFile.read())
-            encoded_png_files.append(mrn_image_str)
-    # End code to serialize png images
-
     # Block of code to print local stats as well
     sites = [site for site in input_list]
 
     all_local_stats_dicts = dict(zip(sites, all_local_stats_dicts))
 
     # Block of code to print just global stats
-    global_dict_list = dict(zip(png_files, encoded_png_files))
+    global_dict_list = encode_png(args)
 
     # Print Everything
     keys2 = ["global_stats", "local_stats"]

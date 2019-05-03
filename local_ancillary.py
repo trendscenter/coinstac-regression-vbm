@@ -5,14 +5,13 @@ Created on Wed Apr 11 22:28:11 2018
 
 @author: Harshvardhan
 """
-import base64
 import numpy as np
 import os
 import pandas as pd
 import scipy as sp
 import warnings
 from numba import jit, prange
-from ancillary import print_pvals, print_beta_images
+from ancillary import print_pvals, print_beta_images, encode_png
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -91,18 +90,7 @@ def local_stats_to_dict_numba(args, X, y):
     print_pvals(args, pvalues.T, tvalues.T, X_labels)
     print_beta_images(args, beta_vector, X_labels)
 
-    # Begin code to serialize png images
-    png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
-
-    encoded_png_files = []
-    for file in png_files:
-        if file.endswith('.png'):
-            mrn_image = os.path.join(args["state"]["outputDirectory"], file)
-            with open(mrn_image, "rb") as imageFile:
-                mrn_image_str = base64.b64encode(imageFile.read())
-            encoded_png_files.append(mrn_image_str)
-
-    local_stats_list = dict(zip(png_files, encoded_png_files))
+    local_stats_list = encode_png(args)
 
     return beta_vector, local_stats_list
 

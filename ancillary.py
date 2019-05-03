@@ -5,6 +5,7 @@ Created on Fri May  3 05:09:13 2019
 
 @author: Harshvardhan
 """
+import base64
 import nibabel as nib
 import numpy as np
 import os
@@ -12,6 +13,21 @@ import pandas as pd
 from nilearn import plotting
 
 MASK = os.path.join('/computation', 'mask_4mm.nii')
+
+
+def encode_png(args):
+    # Begin code to serialize png images
+    png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
+
+    encoded_png_files = []
+    for file in png_files:
+        if file.endswith('.png'):
+            mrn_image = os.path.join(args["state"]["outputDirectory"], file)
+            with open(mrn_image, "rb") as imageFile:
+                mrn_image_str = base64.b64encode(imageFile.read())
+            encoded_png_files.append(mrn_image_str)
+            
+    return dict(zip(png_files, encoded_png_files))
 
 
 def print_beta_images(args, avg_beta_vector, X_labels):
