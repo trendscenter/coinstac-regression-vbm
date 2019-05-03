@@ -10,6 +10,7 @@ import numpy as np
 import os
 import pandas as pd
 
+MASK = os.path.join('/computation', 'mask_4mm.nii')
 
 def parse_for_y(args, y_files, y_labels):
     """Read contents of fsl files into a dataframe"""
@@ -81,9 +82,7 @@ def fsl_parser(args):
 def nifti_to_data(args, X):
     """Read nifti files as matrices"""
     try:
-        mask_file = os.path.join(args["state"]["baseDirectory"],
-                                 'mask_6mm.nii')
-        mask_data = nib.load(mask_file).get_data()
+        mask_data = nib.load(MASK).get_data()
     except FileNotFoundError:
         raise Exception("Missing Mask at " + args["state"]["clientId"])
 

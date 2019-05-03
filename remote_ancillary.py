@@ -14,6 +14,8 @@ import os
 import pandas as pd
 from nilearn import plotting
 
+MASK = os.path.join('/computation', 'mask_4mm.nii')
+
 def get_stats_to_dict(a, *b):
     df = pd.DataFrame(list(zip(*b)), columns=a)
     dict_list = df.to_dict(orient='records')
@@ -26,8 +28,7 @@ def print_beta_images(args, avg_beta_vector, X_labels):
 
     images_folder = args["state"]["outputDirectory"]
 
-    mask_file = os.path.join(args["state"]["baseDirectory"], 'mask_6mm.nii')
-    mask = nib.load(mask_file)
+    mask = nib.load(MASK)
 
     for column in beta_df.columns:
         new_data = np.zeros(mask.shape)
@@ -49,8 +50,7 @@ def print_pvals(args, ps_global, ts_global, X_labels):
     # TODO manual entry, remove later
     images_folder = args["state"]["outputDirectory"]
 
-    mask_file = os.path.join(args["state"]["baseDirectory"], 'mask_6mm.nii')
-    mask = nib.load(mask_file)
+    mask = nib.load(MASK)
 
     for column in p_df.columns:
         new_data = np.zeros(mask.shape)

@@ -20,7 +20,7 @@ from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
 def local_0(args):
     input_list = args["input"]
     lamb = input_list["lambda"]
-
+    
     (X, y) = vbm_parser(args)
 
     computation_output_dict = {
