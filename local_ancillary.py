@@ -6,14 +6,13 @@ Created on Wed Apr 11 22:28:11 2018
 @author: Harshvardhan
 """
 import base64
-import nibabel as nib
-from nilearn import plotting
 import numpy as np
 import os
 import pandas as pd
 import scipy as sp
 import warnings
 from numba import jit, prange
+from ancillary import print_pvals, print_beta_images
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -63,51 +62,6 @@ def gather_local_stats(X, y):
         tvalues[:, voxel] = ts_global
 
     return (params, sse, tvalues, rsquared, dof_global)
-
-
-def print_beta_images(args, avg_beta_vector, X_labels):
-    beta_df = pd.DataFrame(avg_beta_vector, columns=X_labels)
-
-    images_folder = args["state"]["outputDirectory"]
-
-    mask = nib.load(MASK)
-
-    for column in beta_df.columns:
-        new_data = np.zeros(mask.shape)
-        new_data[mask.get_data() > 0] = beta_df[column]
-
-        clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
-
-        plotting.plot_stat_map(
-            clipped_img,
-            output_file=os.path.join(images_folder, 'beta_' + str(column)),
-            display_mode='ortho',
-            colorbar=True)
-
-
-def print_pvals(args, ps_global, ts_global, X_labels):
-    p_df = pd.DataFrame(ps_global, columns=X_labels)
-    t_df = pd.DataFrame(ts_global, columns=X_labels)
-
-    # TODO manual entry, remove later
-    images_folder = args["state"]["outputDirectory"]
-
-    mask = nib.load(MASK)
-
-    for column in p_df.columns:
-        new_data = np.zeros(mask.shape)
-        new_data[mask.get_data() >
-                 0] = -1 * np.log10(p_df[column]) * np.sign(t_df[column])
-
-        clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
-
-        #        thresholdh = max(np.abs(p_df[column]))
-
-        plotting.plot_stat_map(
-            clipped_img,
-            output_file=os.path.join(images_folder, 'pval_' + str(column)),
-            display_mode='ortho',
-            colorbar=True)
 
 
 def local_stats_to_dict_numba(args, X, y):
