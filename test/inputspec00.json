@@ -57,7 +57,7 @@
 ["M02181525_swc1t1avg_4mm.nii", false, 41, "M"],
 ["M02189654_swc1t1avg_4mm.nii", false, 44, "F"],
 ["M02192461_swc1t1avg_4mm.nii", false, 40, "F"],
-["M02196211_swc1t1avg_4mm.nii", false, 44, "M"],
+["M02196211_swc1t1avg_4mm.nii", false, 44, "M"]
  ] 
 
       ],
@@ -129,7 +129,7 @@
 "M02181525_swc1t1avg_4mm.nii",
 "M02189654_swc1t1avg_4mm.nii",
 "M02192461_swc1t1avg_4mm.nii",
-"M02196211_swc1t1avg_4mm.nii",
+"M02196211_swc1t1avg_4mm.nii"
   ],
       [
         "niftifile"

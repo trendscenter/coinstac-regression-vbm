@@ -28,8 +28,8 @@ def local_0(args):
             "computation_phase": "local_0"
         },
         "cache": {
-            "covariates": X.to_json(orient='records'),
-            "dependents": y.to_json(orient='records'),
+            "covariates": X.to_json(orient='split'),
+            "dependents": y.to_json(orient='split'),
             "lambda": lamb,
         },
     }
@@ -38,8 +38,8 @@ def local_0(args):
 
 
 def local_1(args):
-    X = pd.read_json(args["cache"]["covariates"], orient='records')
-    y = pd.read_json(args["cache"]["dependents"], orient='records')
+    X = pd.read_json(args["cache"]["covariates"], orient='split')
+    y = pd.read_json(args["cache"]["dependents"], orient='split')
     lamb = args["cache"]["lambda"]
     y_labels = list(y.columns)
 
@@ -69,7 +69,7 @@ def local_1(args):
             "computation_phase": "local_1"
         },
         "cache": {
-            "covariates": augmented_X.to_json(orient='records'),
+            "covariates": augmented_X.to_json(orient='split'),
         },
     }
 
@@ -106,20 +106,22 @@ def local_2(args):
     cache_list = args["cache"]
     input_list = args["input"]
 
-    X = pd.read_json(cache_list["covariates"], orient='records')
-    y = pd.read_json(cache_list["dependents"], orient='records')
+    X = pd.read_json(cache_list["covariates"], orient='split')
+    y = pd.read_json(cache_list["dependents"], orient='split')
     biased_X = np.array(X)
 
     avg_beta_vector = input_list["avg_beta_vector"]
     mean_y_global = input_list["mean_y_global"]
+    
+    y = y.values.astype('float64')
 
     SSE_local, SST_local = [], []
-    for index, column in enumerate(y.columns):
-        curr_y = y[column].values
+    for voxel in range(y.shape[1]):
+        curr_y = y[:, voxel]
         SSE_local.append(
-            reg.sum_squared_error(biased_X, curr_y, avg_beta_vector[index]))
+            reg.sum_squared_error(biased_X, curr_y, avg_beta_vector[voxel]))
         SST_local.append(
-            np.sum(np.square(np.subtract(curr_y, mean_y_global[index]))))
+            np.sum(np.square(np.subtract(curr_y, mean_y_global[voxel]))))
 
     varX_matrix_local = np.dot(biased_X.T, biased_X)
 

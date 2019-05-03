@@ -12,6 +12,8 @@ import os
 import pandas as pd
 from nilearn import plotting
 
+np.seterr(divide = 'ignore')
+
 MASK = os.path.join('/computation', 'mask_4mm.nii')
 
 

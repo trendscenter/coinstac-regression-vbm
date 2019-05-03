@@ -109,7 +109,7 @@
 ["M52296258_swc1t1_brain_4mm.nii", false, 23, "M"],
 ["M52297972_swc1t1_brain_4mm.nii", false, 44, "F"],
 ["M52298177_swc1t1_brain_4mm.nii", false, 23, "M"],
-["M52299968_swc1t1_brain_4mm.nii", false, 33, "M"],
+["M52299968_swc1t1_brain_4mm.nii", false, 33, "M"]
  ] 
 
       ],
@@ -233,7 +233,7 @@
 "M52296258_swc1t1_brain_4mm.nii",
 "M52297972_swc1t1_brain_4mm.nii",
 "M52298177_swc1t1_brain_4mm.nii",
-"M52299968_swc1t1_brain_4mm.nii",
+"M52299968_swc1t1_brain_4mm.nii"
   ],
       [
         "niftifile"
