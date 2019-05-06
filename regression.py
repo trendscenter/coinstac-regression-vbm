@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This module contains functions to perform decentralized regression and other relevant
+This module contains functions to perform ridge regression and other relevant
 functions including calculation of the coefficient of determination R^2 and
 t-value
 """
@@ -12,8 +12,6 @@ from scipy import stats
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
-
-np.seterr(all='ignore')
 
 
 def list_recursive(d, key):
