@@ -9,6 +9,7 @@ warnings.simplefilter("ignore")
 
 import ujson as json
 import numpy as np
+import os
 import pandas as pd
 import sys
 import regression as reg
@@ -18,31 +19,33 @@ from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
 
 
 def local_0(args):
-    input_list = args["input"]
-    lamb = input_list["lambda"]
-    
-    (X, y) = vbm_parser(args)
 
     computation_output_dict = {
         "output": {
             "computation_phase": "local_0"
         },
-        "cache": {
-            "covariates": X.to_json(orient='split'),
-            "dependents": y.to_json(orient='split'),
-            "lambda": lamb,
-        },
+        "cache": {},
     }
+
+    args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
+    with open(args_file, 'w') as f:
+        json.dump(args, f)
 
     return json.dumps(computation_output_dict)
 
 
 def local_1(args):
-    X = pd.read_json(args["cache"]["covariates"], orient='split')
-    y = pd.read_json(args["cache"]["dependents"], orient='split')
-    lamb = args["cache"]["lambda"]
-    y_labels = list(y.columns)
 
+    args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
+
+    with open(args_file, 'r') as f:
+        original_args = json.load(f)
+
+    lamb = original_args['input']['lambda']
+
+    X, y = vbm_parser(original_args)
+    y_labels = list(y.columns)
+    
     meanY_vector, lenY_vector = mean_and_len_y(y)
 
     _, local_stats_list = local_stats_to_dict_numba(args, X, y)
@@ -55,22 +58,31 @@ def local_1(args):
 
     XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
     Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
+    
+    output_dict = {
+        "XtransposeX_local": XtransposeX_local.tolist(),
+        "Xtransposey_local": Xtransposey_local.tolist(),
+        "mean_y_local": meanY_vector,
+        "count_local": lenY_vector,
+        "local_stats_list": local_stats_list,
+        "X_labels": X_labels,
+        "y_labels": y_labels,
+        "lambda": lamb
+    }
+    cache_dict = {
+        "covariates": augmented_X.to_json(orient='split'),
+    }
+
+    local_output = os.path.join(args['state']['transferDirectory'],
+                                'local_output')
+    with open(local_output, 'w') as f:
+        json.dump(output_dict, f)
 
     computation_output_dict = {
         "output": {
-            "XtransposeX_local": XtransposeX_local.tolist(),
-            "Xtransposey_local": Xtransposey_local.tolist(),
-            "mean_y_local": meanY_vector,
-            "count_local": lenY_vector,
-            "local_stats_list": local_stats_list,
-            "X_labels": X_labels,
-            "y_labels": y_labels,
-            "lambda": lamb,
             "computation_phase": "local_1"
         },
-        "cache": {
-            "covariates": augmented_X.to_json(orient='split'),
-        },
+        "cache": cache_dict,
     }
 
     return json.dumps(computation_output_dict)
@@ -106,13 +118,18 @@ def local_2(args):
     cache_list = args["cache"]
     input_list = args["input"]
 
+    args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
+
+    with open(args_file, 'r') as f:
+        original_args = json.load(f)
+
     X = pd.read_json(cache_list["covariates"], orient='split')
-    y = pd.read_json(cache_list["dependents"], orient='split')
+    (_, y) = vbm_parser(original_args)
     biased_X = np.array(X)
 
     avg_beta_vector = input_list["avg_beta_vector"]
     mean_y_global = input_list["mean_y_global"]
-    
+
     y = y.values.astype('float64')
 
     SSE_local, SST_local = [], []
@@ -125,11 +142,19 @@ def local_2(args):
 
     varX_matrix_local = np.dot(biased_X.T, biased_X)
 
+    output_dict = {
+        "SSE_local": SSE_local,
+        "SST_local": SST_local,
+        "varX_matrix_local": varX_matrix_local.tolist()
+    }
+
+    local_output = os.path.join(args['state']['transferDirectory'],
+                                'local_output')
+    with open(local_output, 'w') as f:
+        json.dump(output_dict, f)
+
     computation_output = {
         "output": {
-            "SSE_local": SSE_local,
-            "SST_local": SST_local,
-            "varX_matrix_local": varX_matrix_local.tolist(),
             "computation_phase": 'local_2'
         },
         "cache": {}

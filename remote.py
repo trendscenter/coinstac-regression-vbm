@@ -5,19 +5,22 @@ This script includes the remote computations for decentralized
 regression with decentralized statistic calculation
 """
 import numpy as np
+import os
 import regression as reg
 import sys
 import scipy as sp
 import ujson as json
 from ancillary import print_pvals, print_beta_images, encode_png
 
+OUTPUT_FROM_LOCAL = 'local_output'
+
 
 def remote_0(args):
     input_list = args["input"]
     site_ids = list(input_list.keys())
     site_covar_list = [
-        '{}_{}'.format('site', label)
-        for index, label in enumerate(site_ids) if index
+        '{}_{}'.format('site', label) for index, label in enumerate(site_ids)
+        if index
     ]
 
     computation_output_dict = {
@@ -27,13 +30,21 @@ def remote_0(args):
         },
         "cache": {}
     }
-
+        
     return json.dumps(computation_output_dict)
 
 
 def remote_1(args):
-    input_list = args["input"]
-    userID = list(input_list)[0]
+    site_list = args["input"].keys()
+    userID = list(site_list)[0]
+
+    input_list = {}
+
+    for site in site_list:
+        file_name = os.path.join(args['state']['baseDirectory'], site,
+                                 OUTPUT_FROM_LOCAL)
+        with open(file_name, 'r') as f:
+            input_list[site] = json.load(f)
 
     X_labels = input_list[userID]["X_labels"]
     y_labels = input_list[userID]["y_labels"]
@@ -58,9 +69,9 @@ def remote_1(args):
 
     avg_beta_vector = np.matrix.transpose(
         sum([
-            np.matmul(
-                sp.linalg.inv(beta_vector_1), input_list[site][
-                    "Xtransposey_local"]) for site in input_list
+            np.matmul(sp.linalg.inv(beta_vector_1),
+                      input_list[site]["Xtransposey_local"])
+            for site in input_list
         ]))
 
     mean_y_local = [input_list[site]["mean_y_local"] for site in input_list]
@@ -68,27 +79,34 @@ def remote_1(args):
         np.array(input_list[site]["count_local"]) for site in input_list
     ]
     mean_y_global = np.array(mean_y_local) * np.array(count_y_local)
-    mean_y_global = np.sum(
-        mean_y_global, axis=0) / np.sum(
-            count_y_local, axis=0)
+    mean_y_global = np.sum(mean_y_global, axis=0) / np.sum(count_y_local,
+                                                           axis=0)
 
     dof_global = sum(count_y_local) - avg_beta_vector.shape[1]
 
-    computation_output_dict = {
-        "output": {
-            "avg_beta_vector": avg_beta_vector.tolist(),
-            "mean_y_global": mean_y_global.tolist(),
-            "computation_phase": "remote_1"
-        },
-        "cache": {
-            "avg_beta_vector": avg_beta_vector.tolist(),
-            "mean_y_global": mean_y_global.tolist(),
-            "dof_global": dof_global.tolist(),
-            "X_labels": X_labels,
-            "y_labels": y_labels,
-            "local_stats_dict": all_local_stats_dicts
-        }
+    output_dict = {
+        "avg_beta_vector": avg_beta_vector.tolist(),
+        "mean_y_global": mean_y_global.tolist(),
+        "computation_phase": "remote_1"
     }
+
+    cache_dict = {
+        "avg_beta_vector": avg_beta_vector.tolist(),
+        "mean_y_global": mean_y_global.tolist(),
+        "dof_global": dof_global.tolist(),
+        "X_labels": X_labels,
+        "y_labels": y_labels,
+        "local_stats_dict": all_local_stats_dicts
+    }
+
+    computation_output_dict = {
+        "output": output_dict,
+        "cache": cache_dict
+    }
+
+    file_name = os.path.join(args['state']['cacheDirectory'], 'remote_cache')
+    with open(file_name, 'w') as f:
+        input_list[site] = json.dump(cache_dict, f)
 
     return json.dumps(computation_output_dict)
 
@@ -133,13 +151,27 @@ def remote_2(args):
                   the variable had no effect.)
 
     """
-    input_list = args["input"]
+    #    input_list = args["input"]
+
+    input_list = {}
+
+
+    site_list = args["input"].keys()
+    for site in site_list:
+        file_name = os.path.join(args['state']['baseDirectory'], site,
+                                 OUTPUT_FROM_LOCAL)
+        with open(file_name, 'r') as f:
+            input_list[site] = json.load(f)
+            
+    file_name = os.path.join(args['state']['cacheDirectory'], 'remote_cache')
+    with open(file_name, 'r') as f:
+        cache_list = json.load(f)
 
     X_labels = args["cache"]["X_labels"]
 
     all_local_stats_dicts = args["cache"]["local_stats_dict"]
 
-    cache_list = args["cache"]
+#    cache_list = args["cache"]
     avg_beta_vector = cache_list["avg_beta_vector"]
     dof_global = cache_list["dof_global"]
 
