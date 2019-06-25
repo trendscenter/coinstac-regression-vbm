@@ -14,7 +14,7 @@ from nilearn import plotting
 
 np.seterr(divide = 'ignore')
 
-MASK = os.path.join('/computation', 'mask_4mm.nii')
+MASK = os.path.join('/computation', 'mask_2mm.nii')
 
 
 def encode_png(args):
