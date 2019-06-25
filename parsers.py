@@ -10,7 +10,7 @@ import numpy as np
 import os
 import pandas as pd
 
-MASK = os.path.join('/computation', 'mask_4mm.nii')
+MASK = os.path.join('/computation', 'mask_2mm.nii')
 
 def parse_for_y(args, y_files, y_labels):
     """Read contents of fsl files into a dataframe"""
