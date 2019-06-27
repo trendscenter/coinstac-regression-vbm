@@ -11,11 +11,13 @@ import numpy as np
 import os
 import pandas as pd
 import sys
+import traceback
 from nilearn import plotting
+from nipype.interfaces import afni
 
 np.seterr(divide = 'ignore')
 
-MASK = os.path.join('/computation', 'mask_2mm.nii')
+MASK = os.path.join('/computation', 'mask_4mm.nii')
 
 
 def get_size(obj, seen=None):
@@ -106,3 +108,23 @@ def print_pvals(args, ps_global, ts_global, X_labels):
             output_file=output_file,
             display_mode='ortho',
             colorbar=True)
+        
+
+def resample_nifti_images(image_file, resampled_file, voxel_dimensions, resample_method):
+    """Resample the NIfTI images in a folder and put them in a new folder
+    Args:
+        images_location: Path where the images are stored
+        voxel_dimension: tuple (dx, dy, dz)
+        resample_method: NN - Nearest neighbor
+                         Li - Linear interpolation
+    Returns:
+        None:
+    """
+    resample = afni.Resample()
+    resample.inputs.environ = {'AFNI_NIFTI_TYPE_WARN': 'NO'}
+    resample.inputs.in_file = image_file
+    resample.inputs.out_file = resampled_file
+    resample.inputs.voxel_size = voxel_dimensions
+    resample.inputs.outputtype = 'NIFTI'
+    resample.inputs.resample_mode = resample_method
+    resample.run()

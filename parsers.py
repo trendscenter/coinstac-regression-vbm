@@ -9,8 +9,12 @@ import nibabel as nib
 import numpy as np
 import os
 import pandas as pd
+from ancillary import resample_nifti_images
+from shutil import copyfile
 
-MASK = os.path.join('/computation', 'mask_2mm.nii')
+MASK = os.path.join('/computation', 'mask_4mm.nii')
+VOXEL_SIZE = (4.0, 4.0, 4.0)
+
 
 def parse_for_y(args, y_files, y_labels):
     """Read contents of fsl files into a dataframe"""
@@ -19,16 +23,19 @@ def parse_for_y(args, y_files, y_labels):
     for file in y_files:
         if file:
             try:
-                y_ = pd.read_csv(
-                    os.path.join(args["state"]["baseDirectory"], file),
-                    sep='\t',
-                    header=None,
-                    names=['Measure:volume', file],
-                    index_col=0)
+                y_ = pd.read_csv(os.path.join(args["state"]["baseDirectory"],
+                                              file),
+                                 sep='\t',
+                                 header=None,
+                                 names=['Measure:volume', file],
+                                 index_col=0)
                 y_ = y_[~y_.index.str.contains("Measure:volume")]
                 y_ = y_.apply(pd.to_numeric, errors='ignore')
-                y = pd.merge(
-                    y, y_, how='left', left_index=True, right_index=True)
+                y = pd.merge(y,
+                             y_,
+                             how='left',
+                             left_index=True,
+                             right_index=True)
             except pd.errors.EmptyDataError:
                 continue
             except FileNotFoundError:
@@ -90,25 +97,36 @@ def nifti_to_data(args, X):
 
     # Extract Data (after applying mask)
     for image in X.index:
+
+        input_file = os.path.join(args["state"]["baseDirectory"], image)
+        output_file = os.path.join(args["state"]["cacheDirectory"], image)
+
         try:
-            image_data = nib.load(
-                os.path.join(args["state"]["baseDirectory"],
-                             image)).get_data()
+            if nib.load(input_file).header.get_zooms() == VOXEL_SIZE:
+                copyfile(input_file, output_file)
+            else:
+                resample_nifti_images(input_file, output_file, VOXEL_SIZE,
+                                      'Li')
+
+            image_data = nib.load(output_file).get_data()
+
             if np.all(np.isnan(image_data)) or np.count_nonzero(
                     image_data) == 0 or image_data.size == 0:
                 X.drop(index=image, inplace=True)
                 continue
             else:
                 appended_data.append(image_data[mask_data > 0])
+                os.remove(output_file)
+
         except FileNotFoundError:
             X.drop(index=image, inplace=True)
             continue
 
     y = pd.DataFrame.from_records(appended_data)
-    
+
     if y.empty:
         raise Exception(
-                'Could not find .nii files specified in the covariates csv')
+            'Could not find .nii files specified in the covariates csv')
 
     return X, y
 

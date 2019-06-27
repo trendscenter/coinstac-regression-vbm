@@ -17,7 +17,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
-MASK = os.path.join('/computation', 'mask_2mm.nii')
+MASK = os.path.join('/computation', 'mask_4mm.nii')
 
 def mean_and_len_y(y):
     """Caculate the length mean of each y vector"""

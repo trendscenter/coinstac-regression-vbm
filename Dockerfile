@@ -1,4 +1,6 @@
-FROM coinstac/coinstac-base-python-stream
+# FROM coinstac/coinstac-base-python-stream
+
+FROM spanta28/coinstac_vbm_docker
 
 # Set the working directory
 WORKDIR /computation
