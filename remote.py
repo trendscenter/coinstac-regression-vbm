@@ -11,10 +11,13 @@ import sys
 import scipy as sp
 import ujson as json
 from ancillary import print_pvals, print_beta_images, encode_png
+from memory_profiler import profile
 
 OUTPUT_FROM_LOCAL = 'local_output'
+fp = open('/output/memory_log', 'a+')
 
 
+@profile(stream=fp)
 def remote_0(args):
     input_list = args["input"]
     site_ids = list(input_list.keys())
@@ -33,7 +36,7 @@ def remote_0(args):
         
     return json.dumps(computation_output_dict)
 
-
+@profile(stream=fp)
 def remote_1(args):
     site_list = args["input"].keys()
     userID = list(site_list)[0]
@@ -111,6 +114,7 @@ def remote_1(args):
     return json.dumps(computation_output_dict)
 
 
+@profile(stream=fp)
 def remote_2(args):
     """
     Computes the global model fit statistics, r_2_global, ts_global, ps_global

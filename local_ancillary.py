@@ -11,11 +11,14 @@ import pandas as pd
 import scipy as sp
 import warnings
 from numba import jit, prange
+from memory_profiler import profile
 from ancillary import print_pvals, print_beta_images, encode_png
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
+
+fp = open('/output/memory_log', 'a+')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
@@ -27,6 +30,7 @@ def mean_and_len_y(y):
     return meanY_vector, lenY_vector
 
 
+@profile(stream=fp)
 @jit(nopython=True)
 def gather_local_stats(X, y):
     """Calculate local statistics"""
@@ -63,6 +67,7 @@ def gather_local_stats(X, y):
     return (params, sse, tvalues, rsquared, dof_global)
 
 
+@profile(stream=fp)
 def local_stats_to_dict_numba(args, X, y):
     """Wrap local statistics into a dictionary to be sent to the remote"""
     X1 = sm.add_constant(X)
@@ -95,6 +100,7 @@ def local_stats_to_dict_numba(args, X, y):
     return beta_vector, local_stats_list
 
 
+@profile(stream=fp)
 def local_stats_to_dict(X, y):
     """Calculate local statistics"""
     y_labels = list(y.columns)
@@ -135,6 +141,7 @@ def local_stats_to_dict(X, y):
     return beta_vector, local_stats_list
 
 
+@profile(stream=fp)
 def add_site_covariates(args, X):
     """Add site specific columns to the covariate matrix"""
     biased_X = sm.add_constant(X)

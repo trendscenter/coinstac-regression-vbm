@@ -8,11 +8,13 @@ import numpy as np
 import scipy as sp
 import warnings
 from scipy import stats
+from meory_profiler import profile
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
+fp = open('/output/memory_log', 'a+')
 
 def list_recursive(d, key):
     for k, v in d.items():
@@ -54,7 +56,7 @@ def one_shot_regression(X, y, lamb):
 
     return model.params
 
-
+@profile(stream=fp)
 def y_estimate(biased_X, beta_vector):
     """Returns the target estimates (predicted values of the target)
 
@@ -72,6 +74,7 @@ def y_estimate(biased_X, beta_vector):
     return np.dot(beta_vector, np.matrix.transpose(biased_X))
 
 
+@profile(stream=fp)
 def sum_squared_error(biased_X, y, beta_vector):
     """Calculates the sum of squared errors (SSE)
 
@@ -89,7 +92,7 @@ def sum_squared_error(biased_X, y, beta_vector):
     """
     return np.linalg.norm(y - y_estimate(biased_X, beta_vector))**2
 
-
+@profile(stream=fp)
 def sum_squared_total(y):
     """Calculates the total sum of squares
 
@@ -104,7 +107,7 @@ def sum_squared_total(y):
     """
     return np.linalg.norm(y - np.mean(y))**2
 
-
+@profile(stream=fp)
 def r_square(biased_X, y, beta_vector):
     """Calculates R-squared value (coefficient of determination)
 
@@ -125,7 +128,7 @@ def r_square(biased_X, y, beta_vector):
 
     return 1 - SSE / SST
 
-
+@profile(stream=fp)
 def beta_var_covar_matrix(biased_X, y, beta_vector):
     """Calculates the variance-covariance matrix of the coefficient vector
 
@@ -148,7 +151,7 @@ def beta_var_covar_matrix(biased_X, y, beta_vector):
 
     return MSE * sp.linalg.inv(np.dot(biased_X.T, biased_X))
 
-
+@profile(stream=fp)
 def t_value(biased_X, y, beta_vector):
     """Returns the t-statistic for each coefficient
 
@@ -170,7 +173,7 @@ def t_value(biased_X, y, beta_vector):
 
     return beta_vector / se_beta
 
-
+@profile(stream=fp)
 def t_to_p(ts_beta, dof):
     """Returns the p-value for each t-statistic of the coefficient vector
 

@@ -9,8 +9,11 @@ import nibabel as nib
 import numpy as np
 import os
 import pandas as pd
+from memory_profiler import profile
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
+fp = open('/output/memory_log', 'a+')
+
 
 def parse_for_y(args, y_files, y_labels):
     """Read contents of fsl files into a dataframe"""
@@ -79,6 +82,7 @@ def fsl_parser(args):
     return (X, y)
 
 
+@profile(stream=fp)
 def nifti_to_data(args, X):
     """Read nifti files as matrices"""
     try:
@@ -113,6 +117,7 @@ def nifti_to_data(args, X):
     return X, y
 
 
+@profile(stream=fp)
 def vbm_parser(args):
     """Parse the nifti (.nii) specific inputspec.json and return the
     covariate matrix (X) as well the dependent matrix (y) as dataframes"""
