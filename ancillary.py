@@ -52,8 +52,8 @@ def encode_png(args):
             with open(mrn_image, "rb") as imageFile:
                 mrn_image_str = base64.b64encode(imageFile.read())
             encoded_png_files.append(mrn_image_str)
-            
-    return dict(zip(png_files, encoded_png_files))
+
+    return dict(zip([file for file in png_files if file.endswith('.png')], encoded_png_files))
 
 
 def print_beta_images(args, avg_beta_vector, X_labels):
@@ -71,15 +71,15 @@ def print_beta_images(args, avg_beta_vector, X_labels):
 
         clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
         output_file = os.path.join(images_folder, image_string)
-        
+
         nib.save(clipped_img, output_file + '.nii')
-        
+
         plotting.plot_stat_map(
             clipped_img,
             output_file=output_file,
             display_mode='ortho',
             colorbar=True)
-        
+
 
 def print_pvals(args, ps_global, ts_global, X_labels):
     p_df = pd.DataFrame(ps_global, columns=X_labels)
@@ -94,21 +94,21 @@ def print_pvals(args, ps_global, ts_global, X_labels):
         new_data = np.zeros(mask.shape)
         new_data[mask.get_data() >
                  0] = -1 * np.log10(p_df[column]) * np.sign(t_df[column])
-        
+
         image_string = 'pval_' + str(column)
 
         clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
         output_file = os.path.join(images_folder, image_string)
 
         nib.save(clipped_img, output_file + '.nii')
-        
+
         #        thresholdh = max(np.abs(p_df[column]))
         plotting.plot_stat_map(
             clipped_img,
             output_file=output_file,
             display_mode='ortho',
             colorbar=True)
-        
+
 
 def resample_nifti_images(image_file, resampled_file, voxel_dimensions, resample_method):
     """Resample the NIfTI images in a folder and put them in a new folder
