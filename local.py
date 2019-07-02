@@ -7,6 +7,7 @@ This script includes the local computations for decentralized regression
 import warnings
 warnings.simplefilter("ignore")
 
+import logging
 import ujson as json
 import numpy as np
 import os
@@ -22,6 +23,13 @@ fp = open('/output/memory_log', 'a+')
 
 @profile(stream=fp)
 def local_0(args):
+
+    logging.basicConfig(filename='/output/app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+    logging.debug('This is a debug message')
+    logging.info('This is an info message')
+    logging.warning('This is a warning message')
+    logging.error('This is an error message')
+    logging.critical('This is a critical message')
 
     computation_output_dict = {
         "output": {

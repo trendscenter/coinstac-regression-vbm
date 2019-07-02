@@ -55,7 +55,7 @@ def encode_png(args):
                 mrn_image_str = base64.b64encode(imageFile.read())
             encoded_png_files.append(mrn_image_str)
             
-    return dict(zip(png_files, encoded_png_files))
+    return dict(zip([f for f in png_files if f.endswith('.png')], encoded_png_files))
 
 
 @profile(stream=fp)

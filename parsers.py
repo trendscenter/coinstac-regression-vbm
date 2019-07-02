@@ -124,7 +124,7 @@ def vbm_parser(args):
     input_list = args["input"]
     X_info = input_list["covariates"]
 
-    X_data = X_info[0][0]
+    X_data = X_info[0][0][:25]
     X_labels = X_info[1]
 
     X_df = pd.DataFrame.from_records(X_data)
@@ -138,7 +138,7 @@ def vbm_parser(args):
     X = X * 1
 
     X.dropna(axis=0, how='any', inplace=True)
-
+    
     X, y = nifti_to_data(args, X)
 
     y.columns = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
