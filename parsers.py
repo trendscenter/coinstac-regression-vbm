@@ -100,13 +100,12 @@ def nifti_to_data(args, X):
 
         input_file = os.path.join(args["state"]["baseDirectory"], image)
         output_file = os.path.join(args["state"]["cacheDirectory"], image)
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
         try:
             if nib.load(input_file).header.get_zooms() == VOXEL_SIZE:
-                os.makedirs(os.path.dirname(output_file), exist_ok=True)
                 copyfile(input_file, output_file)
             else:
-                os.makedirs(os.path.dirname(output_file), exist_ok=True)
                 resample_nifti_images(input_file, output_file, VOXEL_SIZE,
                                       'Li')
 
@@ -139,7 +138,7 @@ def vbm_parser(args):
     input_list = args["input"]
     X_info = input_list["covariates"]
 
-    X_data = X_info[0][0][:25]
+    X_data = X_info[0][0]
     X_labels = X_info[1]
     X_types = X_info[2]
 
