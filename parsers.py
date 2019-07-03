@@ -124,7 +124,7 @@ def nifti_to_data(args, X):
             X.drop(index=image, inplace=True)
             continue
 
-    y = pd.DataFrame.from_records(appended_data)
+    y = pd.DataFrame(appended_data)
 
     if y.empty:
         raise Exception(
