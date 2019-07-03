@@ -103,8 +103,10 @@ def nifti_to_data(args, X):
 
         try:
             if nib.load(input_file).header.get_zooms() == VOXEL_SIZE:
+                os.makedirs(os.path.dirname(output_file), exist_ok=True)
                 copyfile(input_file, output_file)
             else:
+                os.makedirs(os.path.dirname(output_file), exist_ok=True)
                 resample_nifti_images(input_file, output_file, VOXEL_SIZE,
                                       'Li')
 
