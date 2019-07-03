@@ -137,18 +137,21 @@ def vbm_parser(args):
     input_list = args["input"]
     X_info = input_list["covariates"]
 
-    X_data = X_info[0][0]
+    X_data = X_info[0][0][:25]
     X_labels = X_info[1]
+    X_types = X_info[2]
 
-    X_df = pd.DataFrame.from_records(X_data)
-    X_df.columns = X_df.iloc[0]
-    X_df = X_df.reindex(X_df.index.drop(0))
+    X_df = pd.DataFrame(X_data[1:], columns=X_data[0])
     X_df.set_index(X_df.columns[0], inplace=True)
 
     X = X_df[X_labels]
     X = X.apply(pd.to_numeric, errors='ignore')
     X = pd.get_dummies(X, drop_first=True)
-    X = X * 1
+
+    # uint8 instead of int64 saves memory
+    bool_X = [X == 'boolean' for X in X_types]
+    for column in X.columns[bool_X]:
+        X[column] = X[column].astype('u1')
 
     X.dropna(axis=0, how='any', inplace=True)
 
