@@ -104,7 +104,8 @@ def nifti_to_data(args, X):
             X.drop(index=image, inplace=True)
             continue
 
-    y = pd.DataFrame(appended_data)
+    y = np.vstack(appended_data)
+    y = pd.DataFrame(y)
     
     if y.empty:
         raise Exception(
