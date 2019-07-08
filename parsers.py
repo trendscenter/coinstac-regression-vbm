@@ -9,10 +9,8 @@ import nibabel as nib
 import numpy as np
 import os
 import pandas as pd
-from memory_profiler import profile
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
-fp = open('/output/memory_log', 'a+')
 
 
 def parse_for_y(args, y_files, y_labels):
@@ -82,7 +80,6 @@ def fsl_parser(args):
     return (X, y)
 
 
-@profile(stream=fp)
 def nifti_to_data(args, X):
     """Read nifti files as matrices"""
     try:
@@ -108,7 +105,7 @@ def nifti_to_data(args, X):
             X.drop(index=image, inplace=True)
             continue
 
-    y = pd.DataFrame.from_records(appended_data)
+    y = pd.DataFrame(np.vstack(appended_data))
     
     if y.empty:
         raise Exception(
@@ -117,7 +114,6 @@ def nifti_to_data(args, X):
     return X, y
 
 
-@profile(stream=fp)
 def vbm_parser(args):
     """Parse the nifti (.nii) specific inputspec.json and return the
     covariate matrix (X) as well the dependent matrix (y) as dataframes"""
@@ -127,9 +123,7 @@ def vbm_parser(args):
     X_data = X_info[0][0][:25]
     X_labels = X_info[1]
 
-    X_df = pd.DataFrame.from_records(X_data)
-    X_df.columns = X_df.iloc[0]
-    X_df = X_df.reindex(X_df.index.drop(0))
+    X_df = pd.DataFrame(X_data[1:], columns=X_data[0])
     X_df.set_index(X_df.columns[0], inplace=True)
 
     X = X_df[X_labels]

@@ -7,7 +7,6 @@ This script includes the local computations for decentralized regression
 import warnings
 warnings.simplefilter("ignore")
 
-import logging
 import ujson as json
 import numpy as np
 import os
@@ -17,19 +16,9 @@ import regression as reg
 from parsers import vbm_parser
 from local_ancillary import add_site_covariates
 from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
-from memory_profiler import profile
 
-fp = open('/output/memory_log', 'a+')
 
-@profile(stream=fp)
 def local_0(args):
-
-    logging.basicConfig(filename='/output/app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
-    logging.debug('This is a debug message')
-    logging.info('This is an info message')
-    logging.warning('This is a warning message')
-    logging.error('This is an error message')
-    logging.critical('This is a critical message')
 
     computation_output_dict = {
         "output": {
@@ -45,7 +34,6 @@ def local_0(args):
     return json.dumps(computation_output_dict)
 
 
-@profile(stream=fp)
 def local_1(args):
 
     args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
@@ -100,7 +88,6 @@ def local_1(args):
     return json.dumps(computation_output_dict)
 
 
-@profile(stream=fp)
 def local_2(args):
     """Computes the SSE_local, SST_local and varX_matrix_local
     Args:
