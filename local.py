@@ -13,21 +13,30 @@ import os
 import pandas as pd
 import sys
 import regression as reg
-from parsers import vbm_parser
+from parsers import vbm_parser, parse_for_site
 from local_ancillary import add_site_covariates
 from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
 
 
 def local_0(args):
 
+    # Parsing for sites
+    site_dict = parse_for_site(args)
+    
+    # Identifying the base site
+    base_site = args["input"]["base_site"]
+    
     computation_output_dict = {
         "output": {
+            "site_dict": site_dict,
+            "base_site": base_site,
             "computation_phase": "local_0"
         },
         "cache": {},
     }
 
     args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
+
     with open(args_file, 'w') as f:
         json.dump(args, f)
 
@@ -37,20 +46,21 @@ def local_0(args):
 def local_1(args):
 
     args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
-
+    
     with open(args_file, 'r') as f:
         original_args = json.load(f)
 
     lamb = original_args['input']['lambda']
 
     X, y = vbm_parser(original_args)
-    y_labels = list(y.columns)
     
+    y_labels = list(y.columns)
+
     meanY_vector, lenY_vector = mean_and_len_y(y)
 
     _, local_stats_list = local_stats_to_dict_numba(args, X, y)
-
-    augmented_X = add_site_covariates(args, X)
+    
+    augmented_X = add_site_covariates(args, original_args, X)
 
     X_labels = list(augmented_X.columns)
 
@@ -58,7 +68,7 @@ def local_1(args):
 
     XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
     Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
-    
+
     output_dict = {
         "XtransposeX_local": XtransposeX_local.tolist(),
         "Xtransposey_local": Xtransposey_local.tolist(),

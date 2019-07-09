@@ -6,19 +6,56 @@ regression with decentralized statistic calculation
 """
 import numpy as np
 import os
+import pandas as pd
 import regression as reg
 import sys
 import scipy as sp
 import ujson as json
 from ancillary import print_pvals, print_beta_images, encode_png
-from memory_profiler import profile
+#from memory_profiler import profile
 
 OUTPUT_FROM_LOCAL = 'local_output'
 fp = open('/output/memory_log', 'a+')
 
 
-@profile(stream=fp)
+def extract_sites(d):
+    for k, v in d.items():
+        if isinstance(v, dict):
+            for found in extract_sites(v):
+                yield found
+        else:
+            yield v
+
+
 def remote_0(args):
+    input_list = args["input"]
+    site_ids = list(input_list.keys())
+    site_info = {site: input_list[site]['site_dict'] for site in site_ids}
+
+    all_sites = list(extract_sites(site_info))
+
+    site_covar_dict = pd.get_dummies(all_sites,
+                        drop_first=True,
+                        prefix='site')
+    
+    site_covar_dict.rename(index=dict(enumerate(all_sites)), inplace=True)
+    site_covar_dict.index.name = 'site'
+    site_covar_dict.reset_index(level=0, inplace=True)
+    
+
+    computation_output_dict = {
+        "output": {
+            "site_covar_dict": site_covar_dict.to_json(),
+            "computation_phase": "remote_0"
+        },
+        "cache": {}
+    }
+
+    return json.dumps(computation_output_dict)
+
+
+#@profile(stream=fp)
+def remote_00(args):
     input_list = args["input"]
     site_ids = list(input_list.keys())
     site_covar_list = [
@@ -33,10 +70,11 @@ def remote_0(args):
         },
         "cache": {}
     }
-        
+
     return json.dumps(computation_output_dict)
 
-@profile(stream=fp)
+
+#@profile(stream=fp)
 def remote_1(args):
     site_list = args["input"].keys()
     userID = list(site_list)[0]
@@ -102,10 +140,7 @@ def remote_1(args):
         "local_stats_dict": all_local_stats_dicts
     }
 
-    computation_output_dict = {
-        "output": output_dict,
-        "cache": cache_dict
-    }
+    computation_output_dict = {"output": output_dict, "cache": cache_dict}
 
     file_name = os.path.join(args['state']['cacheDirectory'], 'remote_cache')
     with open(file_name, 'w') as f:
@@ -114,7 +149,7 @@ def remote_1(args):
     return json.dumps(computation_output_dict)
 
 
-@profile(stream=fp)
+#@profile(stream=fp)
 def remote_2(args):
     """
     Computes the global model fit statistics, r_2_global, ts_global, ps_global
@@ -159,14 +194,13 @@ def remote_2(args):
 
     input_list = {}
 
-
     site_list = args["input"].keys()
     for site in site_list:
         file_name = os.path.join(args['state']['baseDirectory'], site,
                                  OUTPUT_FROM_LOCAL)
         with open(file_name, 'r') as f:
             input_list[site] = json.load(f)
-            
+
     file_name = os.path.join(args['state']['cacheDirectory'], 'remote_cache')
     with open(file_name, 'r') as f:
         cache_list = json.load(f)
@@ -175,7 +209,7 @@ def remote_2(args):
 
     all_local_stats_dicts = args["cache"]["local_stats_dict"]
 
-#    cache_list = args["cache"]
+    #    cache_list = args["cache"]
     avg_beta_vector = cache_list["avg_beta_vector"]
     dof_global = cache_list["dof_global"]
 

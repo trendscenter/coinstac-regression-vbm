@@ -20,16 +20,19 @@ def parse_for_y(args, y_files, y_labels):
     for file in y_files:
         if file:
             try:
-                y_ = pd.read_csv(
-                    os.path.join(args["state"]["baseDirectory"], file),
-                    sep='\t',
-                    header=None,
-                    names=['Measure:volume', file],
-                    index_col=0)
+                y_ = pd.read_csv(os.path.join(args["state"]["baseDirectory"],
+                                              file),
+                                 sep='\t',
+                                 header=None,
+                                 names=['Measure:volume', file],
+                                 index_col=0)
                 y_ = y_[~y_.index.str.contains("Measure:volume")]
                 y_ = y_.apply(pd.to_numeric, errors='ignore')
-                y = pd.merge(
-                    y, y_, how='left', left_index=True, right_index=True)
+                y = pd.merge(y,
+                             y_,
+                             how='left',
+                             left_index=True,
+                             right_index=True)
             except pd.errors.EmptyDataError:
                 continue
             except FileNotFoundError:
@@ -106,33 +109,48 @@ def nifti_to_data(args, X):
             continue
 
     y = pd.DataFrame(np.vstack(appended_data))
-    
+
     if y.empty:
         raise Exception(
-                'Could not find .nii files specified in the covariates csv')
+            'Could not find .nii files specified in the covariates csv')
 
     return X, y
 
 
-def vbm_parser(args):
-    """Parse the nifti (.nii) specific inputspec.json and return the
-    covariate matrix (X) as well the dependent matrix (y) as dataframes"""
+def parse_for_X(args):
     input_list = args["input"]
     X_info = input_list["covariates"]
 
-    X_data = X_info[0][0][:25]
+    X_data = X_info[0][0]
     X_labels = X_info[1]
 
     X_df = pd.DataFrame(X_data[1:], columns=X_data[0])
     X_df.set_index(X_df.columns[0], inplace=True)
 
     X = X_df[X_labels]
+
+    return X
+
+
+def parse_for_site(args):
+    """Parse the nifti (.nii) specific inputspec.json and return the
+    covariate matrix (X) as well the dependent matrix (y) as dataframes"""
+    X = parse_for_X(args)
+    site_dict = dict(list(enumerate(X['site'].unique())))
+
+    return site_dict
+
+
+def vbm_parser(args):
+    """Parse the nifti (.nii) specific inputspec.json and return the
+    covariate matrix (X) as well the dependent matrix (y) as dataframes"""
+    X = parse_for_X(args)
     X = X.apply(pd.to_numeric, errors='ignore')
     X = pd.get_dummies(X, drop_first=True)
     X = X * 1
 
     X.dropna(axis=0, how='any', inplace=True)
-    
+
     X, y = nifti_to_data(args, X)
 
     y.columns = ['{}_{}'.format('voxel', str(i)) for i in y.columns]

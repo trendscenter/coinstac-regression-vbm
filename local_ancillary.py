@@ -13,6 +13,7 @@ import warnings
 from numba import jit, prange
 from memory_profiler import profile
 from ancillary import print_pvals, print_beta_images, encode_png
+from parsers import parse_for_X
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -22,6 +23,7 @@ fp = open('/output/memory_log', 'a+')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
+
 def mean_and_len_y(y):
     """Caculate the length mean of each y vector"""
     meanY_vector = y.mean(axis=0).tolist()
@@ -30,7 +32,6 @@ def mean_and_len_y(y):
     return meanY_vector, lenY_vector
 
 
-@profile(stream=fp)
 @jit(nopython=True)
 def gather_local_stats(X, y):
     """Calculate local statistics"""
@@ -67,7 +68,6 @@ def gather_local_stats(X, y):
     return (params, sse, tvalues, rsquared, dof_global)
 
 
-@profile(stream=fp)
 def local_stats_to_dict_numba(args, X, y):
     """Wrap local statistics into a dictionary to be sent to the remote"""
     X1 = sm.add_constant(X)
@@ -80,15 +80,15 @@ def local_stats_to_dict_numba(args, X, y):
 
     pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
 
-#    keys = ["beta", "sse", "pval", "tval", "rsquared"]
-#
-#    values1 = pd.DataFrame(
-#        list(
-#            zip(params.T.tolist(), sse.tolist(), pvalues.T.tolist(),
-#                tvalues.T.tolist(), rsquared.tolist())),
-#        columns=keys)
-#
-#    local_stats_list = values1.to_dict(orient='records')
+    #    keys = ["beta", "sse", "pval", "tval", "rsquared"]
+    #
+    #    values1 = pd.DataFrame(
+    #        list(
+    #            zip(params.T.tolist(), sse.tolist(), pvalues.T.tolist(),
+    #                tvalues.T.tolist(), rsquared.tolist())),
+    #        columns=keys)
+    #
+    #    local_stats_list = values1.to_dict(orient='records')
 
     beta_vector = params.T.tolist()
 
@@ -100,7 +100,6 @@ def local_stats_to_dict_numba(args, X, y):
     return beta_vector, local_stats_list
 
 
-@profile(stream=fp)
 def local_stats_to_dict(X, y):
     """Calculate local statistics"""
     y_labels = list(y.columns)
@@ -141,14 +140,13 @@ def local_stats_to_dict(X, y):
     return beta_vector, local_stats_list
 
 
-@profile(stream=fp)
-def add_site_covariates(args, X):
+def add_site_covariates0(args, X):
     """Add site specific columns to the covariate matrix"""
     biased_X = sm.add_constant(X)
     site_covar_list = args["input"]["site_covar_list"]
 
-    site_matrix = np.zeros(
-        (np.array(X).shape[0], len(site_covar_list)), dtype=int)
+    site_matrix = np.zeros((np.array(X).shape[0], len(site_covar_list)),
+                           dtype=int)
     site_df = pd.DataFrame(site_matrix, columns=site_covar_list)
 
     select_cols = [
@@ -163,3 +161,20 @@ def add_site_covariates(args, X):
     augmented_X = pd.concat([biased_X, site_df], axis=1)
 
     return augmented_X
+
+
+def add_site_covariates(args, original_args, X):
+    site_covar_json = args["input"]["site_covar_dict"]
+    site_covar_dict = pd.read_json(site_covar_json)
+    
+    X = parse_for_X(original_args)
+    X = X.apply(pd.to_numeric, errors='ignore')
+    biased_X = sm.add_constant(X)
+    
+    biased_X = biased_X.merge(site_covar_dict, left_on='site', right_on='site')
+    biased_X.drop(columns='site', inplace=True)
+    
+    biased_X = pd.get_dummies(biased_X, drop_first=True)
+    biased_X = biased_X * 1
+    
+    return biased_X
