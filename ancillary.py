@@ -10,39 +10,16 @@ import nibabel as nib
 import numpy as np
 import os
 import pandas as pd
-import sys
 from nilearn import plotting
-from memory_profiler import profile
+#from memory_profiler import profile
 
-fp = open('/output/memory_log', 'a+')
+#fp = open('/output/memory_log', 'a+')
 
 np.seterr(divide = 'ignore')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
-
-def get_size(obj, seen=None):
-    """Recursively finds size of objects"""
-    size = sys.getsizeof(obj)
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    # Important mark as seen *before* entering recursion to gracefully handle
-    # self-referential objects
-    seen.add(obj_id)
-    if isinstance(obj, dict):
-        size += sum([get_size(v, seen) for v in obj.values()])
-        size += sum([get_size(k, seen) for k in obj.keys()])
-    elif hasattr(obj, '__dict__'):
-        size += get_size(obj.__dict__, seen)
-    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
-        size += sum([get_size(i, seen) for i in obj])
-    return size
-
-
-@profile(stream=fp)
+#@profile(stream=fp)
 def encode_png(args):
     # Begin code to serialize png images
     png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
@@ -58,7 +35,7 @@ def encode_png(args):
     return dict(zip([f for f in png_files if f.endswith('.png')], encoded_png_files))
 
 
-@profile(stream=fp)
+#@profile(stream=fp)
 def print_beta_images(args, avg_beta_vector, X_labels):
     beta_df = pd.DataFrame(avg_beta_vector, columns=X_labels)
 
@@ -84,7 +61,7 @@ def print_beta_images(args, avg_beta_vector, X_labels):
             colorbar=True)
         
 
-@profile(stream=fp)
+#@profile(stream=fp)
 def print_pvals(args, ps_global, ts_global, X_labels):
     p_df = pd.DataFrame(ps_global, columns=X_labels)
     t_df = pd.DataFrame(ts_global, columns=X_labels)
