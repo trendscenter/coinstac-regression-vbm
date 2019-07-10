@@ -13,16 +13,19 @@ import os
 import pandas as pd
 import sys
 import regression as reg
+from memory_profiler import profile
 from parsers import vbm_parser, parse_for_site
 from local_ancillary import add_site_covariates
 from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
 
+fp = open('/output/memory_log', 'a+')
 
+@profile(stream=fp)
 def local_0(args):
 
-    # Parsing for sites
+        # Parsing for sites
     site_dict = parse_for_site(args)
-    
+
     # Identifying the base site
     base_site = args["input"]["base_site"]
     
@@ -42,9 +45,9 @@ def local_0(args):
 
     return json.dumps(computation_output_dict)
 
-
+@profile(stream=fp)
 def local_1(args):
-
+    
     args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
     
     with open(args_file, 'r') as f:
@@ -97,7 +100,7 @@ def local_1(args):
 
     return json.dumps(computation_output_dict)
 
-
+@profile(stream=fp)
 def local_2(args):
     """Computes the SSE_local, SST_local and varX_matrix_local
     Args:

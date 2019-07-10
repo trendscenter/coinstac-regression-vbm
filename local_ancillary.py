@@ -36,7 +36,7 @@ def mean_and_len_y(y):
 def gather_local_stats(X, y):
     """Calculate local statistics"""
     size_y = y.shape[1]
-
+    
     params = np.zeros((X.shape[1], size_y))
     sse = np.zeros(size_y)
     tvalues = np.zeros((X.shape[1], size_y))
@@ -71,13 +71,17 @@ def gather_local_stats(X, y):
 def local_stats_to_dict_numba(args, X, y):
     """Wrap local statistics into a dictionary to be sent to the remote"""
     X1 = sm.add_constant(X)
+
     X_labels = list(X1.columns)
 
     X1 = X1.values.astype('float64')
     y1 = y.values.astype('float64')
+    
+#    if args['state']['clientId'] == 'local1':
+#        raise Exception(y.shape)
 
     params, sse, tvalues, rsquared, dof_global = gather_local_stats(X1, y1)
-
+    
     pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
 
     #    keys = ["beta", "sse", "pval", "tval", "rsquared"]
