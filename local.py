@@ -27,7 +27,7 @@ def local_0(args):
     site_dict = parse_for_site(args)
 
     # Identifying the base site
-    base_site = args["input"]["base_site"]
+    base_site = "IA"
     
     computation_output_dict = {
         "output": {
