@@ -12,7 +12,7 @@ import sys
 import scipy as sp
 import ujson as json
 from ancillary import print_pvals, print_beta_images, encode_png
-#from memory_profiler import profile
+from memory_profiler import profile
 
 OUTPUT_FROM_LOCAL = 'local_output'
 fp = open('/output/memory_log', 'a+')
@@ -26,7 +26,7 @@ def extract_sites(d):
         else:
             yield v
 
-
+@profile(stream=fp)
 def remote_0(args):
     input_list = args["input"]
     site_ids = list(input_list.keys())
@@ -54,7 +54,7 @@ def remote_0(args):
     return json.dumps(computation_output_dict)
 
 
-#@profile(stream=fp)
+@profile(stream=fp)
 def remote_00(args):
     input_list = args["input"]
     site_ids = list(input_list.keys())
@@ -74,7 +74,7 @@ def remote_00(args):
     return json.dumps(computation_output_dict)
 
 
-#@profile(stream=fp)
+@profile(stream=fp)
 def remote_1(args):
     site_list = args["input"].keys()
     userID = list(site_list)[0]
@@ -88,7 +88,7 @@ def remote_1(args):
             input_list[site] = json.load(f)
 
     X_labels = input_list[userID]["X_labels"]
-    y_labels = input_list[userID]["y_labels"]
+#    y_labels = input_list[userID]["y_labels"]
 
     all_local_stats_dicts = [
         input_list[site]["local_stats_list"] for site in input_list
@@ -136,7 +136,7 @@ def remote_1(args):
         "mean_y_global": mean_y_global.tolist(),
         "dof_global": dof_global.tolist(),
         "X_labels": X_labels,
-        "y_labels": y_labels,
+#        "y_labels": y_labels,
         "local_stats_dict": all_local_stats_dicts
     }
 
@@ -149,7 +149,7 @@ def remote_1(args):
     return json.dumps(computation_output_dict)
 
 
-#@profile(stream=fp)
+@profile(stream=fp)
 def remote_2(args):
     """
     Computes the global model fit statistics, r_2_global, ts_global, ps_global

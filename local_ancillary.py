@@ -11,7 +11,7 @@ import pandas as pd
 import scipy as sp
 import warnings
 from numba import jit, prange
-from memory_profiler import profile
+#from memory_profiler import profile
 from ancillary import print_pvals, print_beta_images, encode_png
 from parsers import parse_for_X
 
@@ -19,15 +19,16 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
-fp = open('/output/memory_log', 'a+')
+#fp = open('/output/memory_log', 'a+')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
 
 def mean_and_len_y(y):
-    """Caculate the length mean of each y vector"""
-    meanY_vector = y.mean(axis=0).tolist()
-    lenY_vector = y.count(axis=0).tolist()
+    """Caculate the mean and length of each y vector"""
+    meanY_vector = y.mean(axis=0)
+#    lenY_vector = y.count(axis=0)
+    lenY_vector = np.count_nonzero(~np.isnan(y), axis=0)
 
     return meanY_vector, lenY_vector
 
@@ -36,7 +37,7 @@ def mean_and_len_y(y):
 def gather_local_stats(X, y):
     """Calculate local statistics"""
     size_y = y.shape[1]
-
+    
     params = np.zeros((X.shape[1], size_y))
     sse = np.zeros(size_y)
     tvalues = np.zeros((X.shape[1], size_y))
@@ -71,13 +72,14 @@ def gather_local_stats(X, y):
 def local_stats_to_dict_numba(args, X, y):
     """Wrap local statistics into a dictionary to be sent to the remote"""
     X1 = sm.add_constant(X)
+
     X_labels = list(X1.columns)
 
     X1 = X1.values.astype('float64')
-    y1 = y.values.astype('float64')
-
+    y1 = y.astype('float64')
+    
     params, sse, tvalues, rsquared, dof_global = gather_local_stats(X1, y1)
-
+    
     pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
 
     #    keys = ["beta", "sse", "pval", "tval", "rsquared"]

@@ -9,6 +9,9 @@ import nibabel as nib
 import numpy as np
 import os
 import pandas as pd
+from memory_profiler import profile
+
+fp = open('/output/memory_log', 'a+')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
@@ -82,7 +85,7 @@ def fsl_parser(args):
 
     return (X, y)
 
-
+@profile(stream=fp)
 def nifti_to_data(args, X):
     """Read nifti files as matrices"""
     try:
@@ -95,9 +98,9 @@ def nifti_to_data(args, X):
     # Extract Data (after applying mask)
     for image in X.index:
         try:
-            image_data = nib.load(
+            image_data = np.array(nib.load(
                 os.path.join(args["state"]["baseDirectory"],
-                             image)).get_data()
+                             image)).dataobj)
             if np.all(np.isnan(image_data)) or np.count_nonzero(
                     image_data) == 0 or image_data.size == 0:
                 X.drop(index=image, inplace=True)
@@ -108,15 +111,15 @@ def nifti_to_data(args, X):
             X.drop(index=image, inplace=True)
             continue
 
-    y = pd.DataFrame(np.vstack(appended_data))
+    y = np.vstack(appended_data)
 
-    if y.empty:
+    if y.size == 0:
         raise Exception(
             'Could not find .nii files specified in the covariates csv')
 
     return X, y
 
-
+@profile(stream=fp)
 def parse_for_X(args):
     input_list = args["input"]
     X_info = input_list["covariates"]
@@ -131,7 +134,7 @@ def parse_for_X(args):
 
     return X
 
-
+@profile(stream=fp)
 def parse_for_site(args):
     """Parse the nifti (.nii) specific inputspec.json and return the
     covariate matrix (X) as well the dependent matrix (y) as dataframes"""
@@ -140,7 +143,7 @@ def parse_for_site(args):
 
     return site_dict
 
-
+@profile(stream=fp)
 def vbm_parser(args):
     """Parse the nifti (.nii) specific inputspec.json and return the
     covariate matrix (X) as well the dependent matrix (y) as dataframes"""
@@ -153,6 +156,6 @@ def vbm_parser(args):
 
     X, y = nifti_to_data(args, X)
 
-    y.columns = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
+#    y.columns = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
 
     return (X, y)
