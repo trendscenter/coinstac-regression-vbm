@@ -13,17 +13,35 @@ import os
 import pandas as pd
 import sys
 import regression as reg
+from numba import jit
 from memory_profiler import profile
 from parsers import vbm_parser, parse_for_site
 from local_ancillary import add_site_covariates
 from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
 
+
 fp = open('/output/memory_log', 'a+')
+
+@jit(nopython=True)
+def calc_XtransposeX_local(biased_X):
+    return biased_X.T @ biased_X
+
+
+def calc_Xtransposey_local(biased_X, y):
+    biased_X = biased_X.astype('float64')
+    y = y.astype('float64')
+
+    @jit(nopython=True)
+    def mult(a, b):
+        return a @ b
+        
+    return mult(biased_X.T, y)
+
 
 @profile(stream=fp)
 def local_0(args):
 
-        # Parsing for sites
+    # initial parsing
     site_dict = parse_for_site(args)
 
     # Identifying the base site
@@ -52,12 +70,12 @@ def local_1(args):
     
     with open(args_file, 'r') as f:
         original_args = json.load(f)
-
+    
     lamb = original_args['input']['lambda']
 
     X, y = vbm_parser(original_args)
     
-    y_labels = list(y.columns)
+#    y_labels = list(y.columns)
 
     meanY_vector, lenY_vector = mean_and_len_y(y)
 
@@ -69,17 +87,20 @@ def local_1(args):
 
     biased_X = augmented_X.values
 
-    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
-    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
+#    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
+#    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
+        
+    XtransposeX_local = calc_XtransposeX_local(biased_X)
+    Xtransposey_local = calc_Xtransposey_local(biased_X, y)
 
     output_dict = {
         "XtransposeX_local": XtransposeX_local.tolist(),
         "Xtransposey_local": Xtransposey_local.tolist(),
-        "mean_y_local": meanY_vector,
-        "count_local": lenY_vector,
+        "mean_y_local": meanY_vector.tolist(),
+        "count_local": lenY_vector.tolist(),
         "local_stats_list": local_stats_list,
         "X_labels": X_labels,
-        "y_labels": y_labels,
+#        "y_labels": y_labels,
         "lambda": lamb
     }
     cache_dict = {
@@ -143,7 +164,7 @@ def local_2(args):
     avg_beta_vector = input_list["avg_beta_vector"]
     mean_y_global = input_list["mean_y_global"]
 
-    y = y.values.astype('float64')
+    y = y.astype('float64')
 
     SSE_local, SST_local = [], []
     for voxel in range(y.shape[1]):
