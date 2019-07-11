@@ -54,7 +54,7 @@ def remote_0(args):
     return json.dumps(computation_output_dict)
 
 
-#@profile(stream=fp)
+@profile(stream=fp)
 def remote_00(args):
     input_list = args["input"]
     site_ids = list(input_list.keys())
@@ -88,7 +88,7 @@ def remote_1(args):
             input_list[site] = json.load(f)
 
     X_labels = input_list[userID]["X_labels"]
-    y_labels = input_list[userID]["y_labels"]
+#    y_labels = input_list[userID]["y_labels"]
 
     all_local_stats_dicts = [
         input_list[site]["local_stats_list"] for site in input_list
@@ -136,7 +136,7 @@ def remote_1(args):
         "mean_y_global": mean_y_global.tolist(),
         "dof_global": dof_global.tolist(),
         "X_labels": X_labels,
-        "y_labels": y_labels,
+#        "y_labels": y_labels,
         "local_stats_dict": all_local_stats_dicts
     }
 
