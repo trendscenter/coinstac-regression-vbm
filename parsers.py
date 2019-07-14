@@ -83,6 +83,7 @@ def fsl_parser(args):
     return (X, y)
 
 
+# TODO: Check if I can do away with the try and except block
 def nifti_to_data(args, X):
     """Read nifti files as matrices"""
     try:
@@ -105,46 +106,65 @@ def nifti_to_data(args, X):
             else:
                 appended_data.append(image_data[mask_data > 0])
         except FileNotFoundError:
-            X.drop(index=image, inplace=True)
             continue
 
     y = np.vstack(appended_data)
-
-    if y.size == 0:
-        raise Exception(
-            'Could not find .nii files specified in the covariates csv')
 
     return X, y
 
 
 def parse_for_covar_info(args):
-    """Read covariate information from the UI"""
-    args_input = args["input"]
-    covar_info = args_input["covariates"]
+    """Read covariate information from the UI
+    """
+    input_ = args["input"]
+    state_ = args["state"]
+    covar_info = input_["covariates"]
 
+    # Reading in the inpuspec.json
     covar_data = covar_info[0][0]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
+    # Converting the contents to a dataframe
     covar_df = pd.DataFrame(covar_data[1:], columns=covar_data[0])
     covar_df.set_index(covar_df.columns[0], inplace=True)
 
+    # Selecting only the columns sepcified in the UI
+    # TODO: This could be redundant (check with Ross)
     covar_info = covar_df[covar_labels]
+
+    # Checks for existence of files and if they don't delete row
+    for file in covar_info.index:
+        if not os.path.isfile(os.path.join(state_["baseDirectory"], file)):
+            covar_info.drop(file, inplace=True)
+
+    # Raise Exception if none of the files are found
+    if covar_info.index.empty:
+        raise Exception(
+            'Could not find .nii files specified in the covariates csv')
 
     return covar_info, covar_types
 
 
 def parse_for_site(args):
-    """Return unique subsites as a dictionary"""
+    """Return unique subsites as a dictionary
+    """
     X, _ = parse_for_covar_info(args)
     site_dict = dict(list(enumerate(X['site'].unique())))
 
     return site_dict
 
 
+def create_dummies(data_frame, cols, drop_flag=True):
+    """ Create dummy columns
+    """
+    return pd.get_dummies(data_frame, columns=cols, drop_first=drop_flag)
+
+
 def vbm_parser(args):
     """Parse the nifti (.nii) specific inputspec.json and return the
-    covariate matrix (X) as well the dependent matrix (y) as dataframes"""
+    covariate matrix (X) as well the dependent matrix (y) as dataframes
+    """
     selected_covar, covar_types = parse_for_covar_info(args)
 
     # Working with "boolean" type covariates
@@ -154,28 +174,28 @@ def vbm_parser(args):
         for column in selected_covar.columns[bool_x]:
             selected_covar[column] = selected_covar[column].astype('u1')
 
-    # Working with "string" type of covariates
+    # Working with "string" type covariates
     categorical_x = [x == 'string' for x in covar_types]
     if categorical_x:
-        encode_columns = []
-        categorical_columns = selected_covar.columns[categorical_x]
-        for column in categorical_columns:
-            if selected_covar[column].nunique() > 2:
-                encode_columns.append(column)
+        cols_categorical = selected_covar.columns[categorical_x]
+
+        cols_polychot = [
+            col for col in cols_categorical
+            if selected_covar[col].nunique() > 2
+        ]
+
+        cols_dichot = [
+            col for col in cols_categorical
+            if selected_covar[col].nunique() == 2
+        ]
 
     # One-hot encoding (polychotomous variables)
-    if encode_columns:
-        selected_covar = pd.get_dummies(selected_covar,
-                                        columns=encode_columns,
-                                        drop_first=False)
+    if cols_polychot:
+        selected_covar = create_dummies(selected_covar, cols_polychot, False)
 
     # Binary encoding (dichotomous variables)
-    bin_categorical_cols = list(set(categorical_columns) - set(encode_columns))
-
-    if bin_categorical_cols:
-        selected_covar = pd.get_dummies(selected_covar,
-                                        columns=bin_categorical_cols,
-                                        drop_first=True)
+    if cols_dichot:
+        selected_covar = create_dummies(selected_covar, cols_dichot, True)
 
     selected_covar.dropna(axis=0, how='any', inplace=True)
 

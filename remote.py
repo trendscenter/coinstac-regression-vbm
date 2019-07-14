@@ -74,7 +74,6 @@ def remote_1(args):
             input_list[site] = json.load(file_h)
 
     X_labels = input_list[user_id]["X_labels"]
-    #    y_labels = input_list[user_id]["y_labels"]
 
     all_local_stats_dicts = [
         input_list[site]["local_stats_list"] for site in input_list
@@ -194,7 +193,6 @@ def remote_2(args):
 
     all_local_stats_dicts = args["cache"]["local_stats_dict"]
 
-    #    cache_list = args["cache"]
     avg_beta_vector = cache_list["avg_beta_vector"]
     dof_global = cache_list["dof_global"]
 

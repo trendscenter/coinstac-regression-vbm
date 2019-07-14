@@ -64,10 +64,6 @@ def local_0(args):
 def local_1(args):
     """ The second function in the local computation chain
     """
-    cache = args["state"]["cache"]
-    input_ = args["state"]["input"]
-    output_ = spec["state"]["output"]
-
     original_args = read_file(args, 'cache', 'args_file')
     regularizer_l2 = original_args['input']['lambda']
 
