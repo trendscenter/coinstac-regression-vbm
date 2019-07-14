@@ -4,48 +4,34 @@
 This script includes the remote computations for decentralized
 regression with decentralized statistic calculation
 """
-import numpy as np
 import os
-import pandas as pd
-import regression as reg
 import sys
+
+import numpy as np
 import scipy as sp
 import ujson as json
-from ancillary import print_pvals, print_beta_images, encode_png
-from memory_profiler import profile
+
+import regression as reg
+from ancillary import encode_png, print_beta_images, print_pvals
+from remote_ancillary import extract_sites
 
 OUTPUT_FROM_LOCAL = 'local_output'
-fp = open('/output/memory_log', 'a+')
 
 
-def extract_sites(d):
-    for k, v in d.items():
-        if isinstance(v, dict):
-            for found in extract_sites(v):
-                yield found
-        else:
-            yield v
-
-@profile(stream=fp)
 def remote_0(args):
+    """ The first function in the remote computation chain
+    """
     input_list = args["input"]
-    site_ids = list(input_list.keys())
-    site_info = {site: input_list[site]['site_dict'] for site in site_ids}
+    site_info = {
+        site: input_list[site]['site_dict']
+        for site in input_list.keys()
+    }
 
     all_sites = list(extract_sites(site_info))
 
-    site_covar_dict = pd.get_dummies(all_sites,
-                        drop_first=True,
-                        prefix='site')
-    
-    site_covar_dict.rename(index=dict(enumerate(all_sites)), inplace=True)
-    site_covar_dict.index.name = 'site'
-    site_covar_dict.reset_index(level=0, inplace=True)
-    
-
     computation_output_dict = {
         "output": {
-            "site_covar_dict": site_covar_dict.to_json(),
+            "site_list": all_sites,
             "computation_phase": "remote_0"
         },
         "cache": {}
@@ -54,8 +40,8 @@ def remote_0(args):
     return json.dumps(computation_output_dict)
 
 
-@profile(stream=fp)
 def remote_00(args):
+    """ The first function in the remote computation chain"""
     input_list = args["input"]
     site_ids = list(input_list.keys())
     site_covar_list = [
@@ -74,21 +60,21 @@ def remote_00(args):
     return json.dumps(computation_output_dict)
 
 
-@profile(stream=fp)
 def remote_1(args):
+    """ The second function in the local computation chain"""
     site_list = args["input"].keys()
-    userID = list(site_list)[0]
+    user_id = list(site_list)[0]
 
     input_list = {}
 
     for site in site_list:
         file_name = os.path.join(args['state']['baseDirectory'], site,
                                  OUTPUT_FROM_LOCAL)
-        with open(file_name, 'r') as f:
-            input_list[site] = json.load(f)
+        with open(file_name, 'r') as file_h:
+            input_list[site] = json.load(file_h)
 
-    X_labels = input_list[userID]["X_labels"]
-#    y_labels = input_list[userID]["y_labels"]
+    X_labels = input_list[user_id]["X_labels"]
+    #    y_labels = input_list[user_id]["y_labels"]
 
     all_local_stats_dicts = [
         input_list[site]["local_stats_list"] for site in input_list
@@ -136,20 +122,19 @@ def remote_1(args):
         "mean_y_global": mean_y_global.tolist(),
         "dof_global": dof_global.tolist(),
         "X_labels": X_labels,
-#        "y_labels": y_labels,
+        #        "y_labels": y_labels,
         "local_stats_dict": all_local_stats_dicts
     }
 
     computation_output_dict = {"output": output_dict, "cache": cache_dict}
 
     file_name = os.path.join(args['state']['cacheDirectory'], 'remote_cache')
-    with open(file_name, 'w') as f:
-        input_list[site] = json.dump(cache_dict, f)
+    with open(file_name, 'w') as file_h:
+        input_list[site] = json.dump(cache_dict, file_h)
 
     return json.dumps(computation_output_dict)
 
 
-@profile(stream=fp)
 def remote_2(args):
     """
     Computes the global model fit statistics, r_2_global, ts_global, ps_global
@@ -198,12 +183,12 @@ def remote_2(args):
     for site in site_list:
         file_name = os.path.join(args['state']['baseDirectory'], site,
                                  OUTPUT_FROM_LOCAL)
-        with open(file_name, 'r') as f:
-            input_list[site] = json.load(f)
+        with open(file_name, 'r') as file_h:
+            input_list[site] = json.load(file_h)
 
     file_name = os.path.join(args['state']['cacheDirectory'], 'remote_cache')
-    with open(file_name, 'r') as f:
-        cache_list = json.load(f)
+    with open(file_name, 'r') as file_h:
+        cache_list = json.load(file_h)
 
     X_labels = args["cache"]["X_labels"]
 
@@ -215,19 +200,19 @@ def remote_2(args):
 
     SSE_global = sum(
         [np.array(input_list[site]["SSE_local"]) for site in input_list])
-    SST_global = sum(
-        [np.array(input_list[site]["SST_local"]) for site in input_list])
+    #    SST_global = sum(
+    #        [np.array(input_list[site]["SST_local"]) for site in input_list])
     varX_matrix_global = sum([
         np.array(input_list[site]["varX_matrix_local"]) for site in input_list
     ])
 
-    r_squared_global = 1 - (SSE_global / SST_global)
+    #    r_squared_global = 1 - (SSE_global / SST_global)
     MSE = SSE_global / np.array(dof_global)
 
     ts_global = []
     ps_global = []
 
-    for i in range(len(MSE)):
+    for i, _ in enumerate(MSE):
         var_covar_beta_global = MSE[i] * sp.linalg.inv(varX_matrix_global)
         se_beta_global = np.sqrt(var_covar_beta_global.diagonal())
         ts = (avg_beta_vector[i] / se_beta_global).tolist()
@@ -250,24 +235,21 @@ def remote_2(args):
     keys2 = ["global_stats", "local_stats"]
     output_dict = dict(zip(keys2, [global_dict_list, all_local_stats_dicts]))
 
-    computation_output = {"output": output_dict, "success": True}
+    computation_output_dict = {"output": output_dict, "success": True}
 
-    return json.dumps(computation_output)
+    return json.dumps(computation_output_dict)
 
 
 if __name__ == '__main__':
 
-    parsed_args = json.loads(sys.stdin.read())
-    phase_key = list(reg.list_recursive(parsed_args, 'computation_phase'))
+    PARSED_ARGS = json.loads(sys.stdin.read())
+    PHASE_KEY = list(reg.list_recursive(PARSED_ARGS, 'computation_phase'))
 
-    if "local_0" in phase_key:
-        computation_output = remote_0(parsed_args)
-        sys.stdout.write(computation_output)
-    elif "local_1" in phase_key:
-        computation_output = remote_1(parsed_args)
-        sys.stdout.write(computation_output)
-    elif "local_2" in phase_key:
-        computation_output = remote_2(parsed_args)
-        sys.stdout.write(computation_output)
+    if "local_0" in PHASE_KEY:
+        sys.stdout.write(remote_0(PARSED_ARGS))
+    elif "local_1" in PHASE_KEY:
+        sys.stdout.write(remote_1(PARSED_ARGS))
+    elif "local_2" in PHASE_KEY:
+        sys.stdout.write(remote_2(PARSED_ARGS))
     else:
         raise ValueError("Error occurred at Remote")

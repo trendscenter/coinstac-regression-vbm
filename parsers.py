@@ -5,13 +5,11 @@ Created on Wed Mar 21 19:25:26 2018
 
 @author: Harshvardhan
 """
+import os
+
 import nibabel as nib
 import numpy as np
-import os
 import pandas as pd
-from memory_profiler import profile
-
-fp = open('/output/memory_log', 'a+')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
@@ -79,13 +77,12 @@ def fsl_parser(args):
     if ixs.empty:
         raise Exception('No common X and y files at ' +
                         args["state"]["clientId"])
-    else:
-        X = X.loc[ixs]
-        y = y.loc[ixs]
+    X = X.loc[ixs]
+    y = y.loc[ixs]
 
     return (X, y)
 
-@profile(stream=fp)
+
 def nifti_to_data(args, X):
     """Read nifti files as matrices"""
     try:
@@ -98,9 +95,9 @@ def nifti_to_data(args, X):
     # Extract Data (after applying mask)
     for image in X.index:
         try:
-            image_data = np.array(nib.load(
-                os.path.join(args["state"]["baseDirectory"],
-                             image)).dataobj)
+            image_data = np.array(
+                nib.load(os.path.join(args["state"]["baseDirectory"],
+                                      image)).dataobj)
             if np.all(np.isnan(image_data)) or np.count_nonzero(
                     image_data) == 0 or image_data.size == 0:
                 X.drop(index=image, inplace=True)
@@ -119,43 +116,69 @@ def nifti_to_data(args, X):
 
     return X, y
 
-@profile(stream=fp)
-def parse_for_X(args):
-    input_list = args["input"]
-    X_info = input_list["covariates"]
 
-    X_data = X_info[0][0]
-    X_labels = X_info[1]
+def parse_for_covar_info(args):
+    """Read covariate information from the UI"""
+    args_input = args["input"]
+    covar_info = args_input["covariates"]
 
-    X_df = pd.DataFrame(X_data[1:], columns=X_data[0])
-    X_df.set_index(X_df.columns[0], inplace=True)
+    covar_data = covar_info[0][0]
+    covar_labels = covar_info[1]
+    covar_types = covar_info[2]
 
-    X = X_df[X_labels]
+    covar_df = pd.DataFrame(covar_data[1:], columns=covar_data[0])
+    covar_df.set_index(covar_df.columns[0], inplace=True)
 
-    return X
+    covar_info = covar_df[covar_labels]
 
-@profile(stream=fp)
+    return covar_info, covar_types
+
+
 def parse_for_site(args):
-    """Parse the nifti (.nii) specific inputspec.json and return the
-    covariate matrix (X) as well the dependent matrix (y) as dataframes"""
-    X = parse_for_X(args)
+    """Return unique subsites as a dictionary"""
+    X, _ = parse_for_covar_info(args)
     site_dict = dict(list(enumerate(X['site'].unique())))
 
     return site_dict
 
-@profile(stream=fp)
+
 def vbm_parser(args):
     """Parse the nifti (.nii) specific inputspec.json and return the
     covariate matrix (X) as well the dependent matrix (y) as dataframes"""
-    X = parse_for_X(args)
-    X = X.apply(pd.to_numeric, errors='ignore')
-    X = pd.get_dummies(X, drop_first=True)
-    X = X * 1
+    selected_covar, covar_types = parse_for_covar_info(args)
 
-    X.dropna(axis=0, how='any', inplace=True)
+    # Working with "boolean" type covariates
+    # uint8 instead of int64 saves memory
+    bool_x = [x == 'boolean' for x in covar_types]
+    if bool_x:
+        for column in selected_covar.columns[bool_x]:
+            selected_covar[column] = selected_covar[column].astype('u1')
 
-    X, y = nifti_to_data(args, X)
+    # Working with "string" type of covariates
+    categorical_x = [x == 'string' for x in covar_types]
+    if categorical_x:
+        encode_columns = []
+        categorical_columns = selected_covar.columns[categorical_x]
+        for column in categorical_columns:
+            if selected_covar[column].nunique() > 2:
+                encode_columns.append(column)
 
-#    y.columns = ['{}_{}'.format('voxel', str(i)) for i in y.columns]
+    # One-hot encoding (polychotomous variables)
+    if encode_columns:
+        selected_covar = pd.get_dummies(selected_covar,
+                                        columns=encode_columns,
+                                        drop_first=False)
 
-    return (X, y)
+    # Binary encoding (dichotomous variables)
+    bin_categorical_cols = list(set(categorical_columns) - set(encode_columns))
+
+    if bin_categorical_cols:
+        selected_covar = pd.get_dummies(selected_covar,
+                                        columns=bin_categorical_cols,
+                                        drop_first=True)
+
+    selected_covar.dropna(axis=0, how='any', inplace=True)
+
+    covar_info, y_info = nifti_to_data(args, selected_covar)
+
+    return (covar_info, y_info)

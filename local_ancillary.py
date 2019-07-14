@@ -5,21 +5,21 @@ Created on Wed Apr 11 22:28:11 2018
 
 @author: Harshvardhan
 """
-import numpy as np
 import os
+import warnings
+
+import numpy as np
 import pandas as pd
 import scipy as sp
-import warnings
 from numba import jit, prange
-#from memory_profiler import profile
-from ancillary import print_pvals, print_beta_images, encode_png
-from parsers import parse_for_X
+
+from ancillary import encode_png, print_beta_images, print_pvals
+from parsers import parse_for_covar_info
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
-#fp = open('/output/memory_log', 'a+')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
@@ -27,7 +27,7 @@ MASK = os.path.join('/computation', 'mask_2mm.nii')
 def mean_and_len_y(y):
     """Caculate the mean and length of each y vector"""
     meanY_vector = y.mean(axis=0)
-#    lenY_vector = y.count(axis=0)
+    #    lenY_vector = y.count(axis=0)
     lenY_vector = np.count_nonzero(~np.isnan(y), axis=0)
 
     return meanY_vector, lenY_vector
@@ -37,7 +37,7 @@ def mean_and_len_y(y):
 def gather_local_stats(X, y):
     """Calculate local statistics"""
     size_y = y.shape[1]
-    
+
     params = np.zeros((X.shape[1], size_y))
     sse = np.zeros(size_y)
     tvalues = np.zeros((X.shape[1], size_y))
@@ -77,9 +77,9 @@ def local_stats_to_dict_numba(args, X, y):
 
     X1 = X1.values.astype('float64')
     y1 = y.astype('float64')
-    
-    params, sse, tvalues, rsquared, dof_global = gather_local_stats(X1, y1)
-    
+
+    params, _, tvalues, _, dof_global = gather_local_stats(X1, y1)
+
     pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
 
     #    keys = ["beta", "sse", "pval", "tval", "rsquared"]
@@ -165,18 +165,40 @@ def add_site_covariates0(args, X):
     return augmented_X
 
 
-def add_site_covariates(args, original_args, X):
+def add_site_covariates00(args, original_args, X):
     site_covar_json = args["input"]["site_covar_dict"]
     site_covar_dict = pd.read_json(site_covar_json)
-    
-    X = parse_for_X(original_args)
+
+    X = parse_for_covar_info(original_args)
     X = X.apply(pd.to_numeric, errors='ignore')
     biased_X = sm.add_constant(X)
-    
+
     biased_X = biased_X.merge(site_covar_dict, left_on='site', right_on='site')
     biased_X.drop(columns='site', inplace=True)
-    
+
     biased_X = pd.get_dummies(biased_X, drop_first=True)
     biased_X = biased_X * 1
-    
+
+    return biased_X
+
+
+def add_site_covariates(args, original_args, X):
+    """Add site covariates based on information gathered from all sites"""
+    all_sites = args["input"]["site_list"]
+
+    X, _ = parse_for_covar_info(original_args)
+    X = X.apply(pd.to_numeric, errors='ignore')
+    biased_X = sm.add_constant(X)
+
+    site_covar_dict = pd.get_dummies(all_sites, prefix='site')
+    site_covar_dict.rename(index=dict(enumerate(all_sites)), inplace=True)
+    site_covar_dict.index.name = 'site'
+    site_covar_dict.reset_index(level=0, inplace=True)
+
+    biased_X = biased_X.merge(site_covar_dict, left_on='site', right_on='site')
+    biased_X.drop(columns='site', inplace=True)
+
+    biased_X = pd.get_dummies(biased_X, drop_first=True)
+    biased_X = biased_X * 1
+
     return biased_X

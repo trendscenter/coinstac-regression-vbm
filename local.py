@@ -4,92 +4,84 @@
 This script includes the local computations for decentralized regression
 (normal equation) including decentralized statistic calculation
 """
+import os
+import sys
 import warnings
+
+import numpy as np
+import pandas as pd
+import ujson as json
+from numba import jit
+
+import regression as reg
+from local_ancillary import (add_site_covariates, local_stats_to_dict_numba,
+                             mean_and_len_y)
+from parsers import parse_for_site, vbm_parser
+from rw_utils import read_file, write_file
+
 warnings.simplefilter("ignore")
 
-import ujson as json
-import numpy as np
-import os
-import pandas as pd
-import sys
-import regression as reg
-from numba import jit
-from memory_profiler import profile
-from parsers import vbm_parser, parse_for_site
-from local_ancillary import add_site_covariates
-from local_ancillary import mean_and_len_y, local_stats_to_dict_numba
-
-
-fp = open('/output/memory_log', 'a+')
 
 @jit(nopython=True)
 def calc_XtransposeX_local(biased_X):
+    """Calculates X.T * X
+    """
     return biased_X.T @ biased_X
 
 
 def calc_Xtransposey_local(biased_X, y):
+    """Calculates X.T * y
+    """
     biased_X = biased_X.astype('float64')
     y = y.astype('float64')
 
     @jit(nopython=True)
     def mult(a, b):
+        """Multiplies two matrices"""
         return a @ b
-        
+
     return mult(biased_X.T, y)
 
 
-@profile(stream=fp)
 def local_0(args):
-
-    # initial parsing
+    """ The first function in the local computation chain
+    """
     site_dict = parse_for_site(args)
 
-    # Identifying the base site
-    base_site = "IA"
-    
+    output_dict = {"site_dict": site_dict, "computation_phase": "local_0"}
+    cache_dict = {}
+
     computation_output_dict = {
-        "output": {
-            "site_dict": site_dict,
-            "base_site": base_site,
-            "computation_phase": "local_0"
-        },
-        "cache": {},
+        "output": output_dict,
+        "cache": cache_dict,
     }
 
-    args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
-
-    with open(args_file, 'w') as f:
-        json.dump(args, f)
+    write_file(args, args, 'cache', 'args_file')
 
     return json.dumps(computation_output_dict)
 
-@profile(stream=fp)
+
 def local_1(args):
-    
-    args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
-    
-    with open(args_file, 'r') as f:
-        original_args = json.load(f)
-    
-    lamb = original_args['input']['lambda']
+    """ The second function in the local computation chain
+    """
+    cache = args["state"]["cache"]
+    input_ = args["state"]["input"]
+    output_ = spec["state"]["output"]
+
+    original_args = read_file(args, 'cache', 'args_file')
+    regularizer_l2 = original_args['input']['lambda']
 
     X, y = vbm_parser(original_args)
-    
-#    y_labels = list(y.columns)
-
     meanY_vector, lenY_vector = mean_and_len_y(y)
-
     _, local_stats_list = local_stats_to_dict_numba(args, X, y)
-    
+
     augmented_X = add_site_covariates(args, original_args, X)
-
     X_labels = list(augmented_X.columns)
-
     biased_X = augmented_X.values
 
-#    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
-#    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
-        
+    #    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
+    #    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
+
     XtransposeX_local = calc_XtransposeX_local(biased_X)
     Xtransposey_local = calc_Xtransposey_local(biased_X, y)
 
@@ -100,8 +92,7 @@ def local_1(args):
         "count_local": lenY_vector.tolist(),
         "local_stats_list": local_stats_list,
         "X_labels": X_labels,
-#        "y_labels": y_labels,
-        "lambda": lamb
+        "lambda": regularizer_l2
     }
     cache_dict = {
         "covariates": augmented_X.to_json(orient='split'),
@@ -109,8 +100,8 @@ def local_1(args):
 
     local_output = os.path.join(args['state']['transferDirectory'],
                                 'local_output')
-    with open(local_output, 'w') as f:
-        json.dump(output_dict, f)
+    with open(local_output, 'w') as file_h:
+        json.dump(output_dict, file_h)
 
     computation_output_dict = {
         "output": {
@@ -121,7 +112,7 @@ def local_1(args):
 
     return json.dumps(computation_output_dict)
 
-@profile(stream=fp)
+
 def local_2(args):
     """Computes the SSE_local, SST_local and varX_matrix_local
     Args:
@@ -154,8 +145,8 @@ def local_2(args):
 
     args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
 
-    with open(args_file, 'r') as f:
-        original_args = json.load(f)
+    with open(args_file, 'r') as file_h:
+        original_args = json.load(file_h)
 
     X = pd.read_json(cache_list["covariates"], orient='split')
     (_, y) = vbm_parser(original_args)
@@ -182,34 +173,25 @@ def local_2(args):
         "varX_matrix_local": varX_matrix_local.tolist()
     }
 
-    local_output = os.path.join(args['state']['transferDirectory'],
-                                'local_output')
-    with open(local_output, 'w') as f:
-        json.dump(output_dict, f)
+    write_file(args, output_dict, 'output', 'local_output')
 
-    computation_output = {
-        "output": {
-            "computation_phase": 'local_2'
-        },
-        "cache": {}
-    }
+    output_dict = {"computation_phase": 'local_2'}
+    cache_dict = {}
+    computation_output_dict = {"output": output_dict, "cache": cache_dict}
 
-    return json.dumps(computation_output)
+    return json.dumps(computation_output_dict)
 
 
 if __name__ == '__main__':
 
-    parsed_args = json.loads(sys.stdin.read())
-    phase_key = list(reg.list_recursive(parsed_args, 'computation_phase'))
+    PARSED_ARGS = json.loads(sys.stdin.read())
+    PHASE_KEY = list(reg.list_recursive(PARSED_ARGS, 'computation_phase'))
 
-    if not phase_key:
-        computation_output = local_0(parsed_args)
-        sys.stdout.write(computation_output)
-    elif "remote_0" in phase_key:
-        computation_output = local_1(parsed_args)
-        sys.stdout.write(computation_output)
-    elif "remote_1" in phase_key:
-        computation_output = local_2(parsed_args)
-        sys.stdout.write(computation_output)
+    if not PHASE_KEY:
+        sys.stdout.write(local_0(PARSED_ARGS))
+    elif "remote_0" in PHASE_KEY:
+        sys.stdout.write(local_1(PARSED_ARGS))
+    elif "remote_1" in PHASE_KEY:
+        sys.stdout.write(local_2(PARSED_ARGS))
     else:
         raise ValueError("Error occurred at Local")
