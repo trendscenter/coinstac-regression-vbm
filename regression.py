@@ -4,9 +4,10 @@ This module contains functions to perform ridge regression and other relevant
 functions including calculation of the coefficient of determination R^2 and
 t-value
 """
+import warnings
+
 import numpy as np
 import scipy as sp
-import warnings
 from scipy import stats
 
 with warnings.catch_warnings():

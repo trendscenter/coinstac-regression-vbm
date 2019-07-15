@@ -6,21 +6,19 @@ Created on Fri May  3 05:09:13 2019
 @author: Harshvardhan
 """
 import base64
+import os
+
 import nibabel as nib
 import numpy as np
-import os
 import pandas as pd
-from nilearn import plotting
-#from memory_profiler import profile
 
-#fp = open('/output/memory_log', 'a+')
+from nilearn import plotting
 
 np.seterr(divide='ignore')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
 
-#@profile(stream=fp)
 def encode_png(args):
     # Begin code to serialize png images
     png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
@@ -37,7 +35,6 @@ def encode_png(args):
         zip([f for f in png_files if f.endswith('.png')], encoded_png_files))
 
 
-#@profile(stream=fp)
 def print_beta_images(args, avg_beta_vector, X_labels):
     beta_df = pd.DataFrame(avg_beta_vector, columns=X_labels)
 
@@ -62,7 +59,6 @@ def print_beta_images(args, avg_beta_vector, X_labels):
                                colorbar=True)
 
 
-#@profile(stream=fp)
 def print_pvals(args, ps_global, ts_global, X_labels):
     p_df = pd.DataFrame(ps_global, columns=X_labels)
     t_df = pd.DataFrame(ts_global, columns=X_labels)

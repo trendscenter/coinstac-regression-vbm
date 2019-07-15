@@ -8,33 +8,44 @@ import os
 import sys
 
 import numpy as np
+import pandas as pd
 import scipy as sp
 import ujson as json
 
 import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals
-from remote_ancillary import extract_sites
 
 OUTPUT_FROM_LOCAL = 'local_output'
+
+
+def return_uniques_and_counts(df):
+    """Return unique-values of the categorical variables and their counts
+    """
+    keys, count = dict(), dict()
+    for index, row in df.iterrows():
+        flat_list = [item for sublist in row for item in sublist]
+        keys[index] = set(flat_list)
+        count[index] = len(set(flat_list))
+
+    return keys, count
 
 
 def remote_0(args):
     """ The first function in the remote computation chain
     """
-    input_list = args["input"]
+    input_ = args["input"]
     site_info = {
-        site: input_list[site]['site_dict']
-        for site in input_list.keys()
+        site: input_[site]['categorical_dict']
+        for site in input_.keys()
     }
 
-    # TODO: Extend this function to include other covariates as well
-    all_sites = {"site": list(extract_sites(site_info))}
-    global_unique_count = {key: len(val) for key, val in all_sites.items()}
+    df = pd.DataFrame.from_dict(site_info)
+    covar_keys, unique_count = return_uniques_and_counts(df)
 
     computation_output_dict = {
         "output": {
-            "site_list": all_sites,
-            "global_unique_count": global_unique_count,
+            "covar_keys": covar_keys,
+            "global_unique_count": unique_count,
             "computation_phase": "remote_0"
         },
         "cache": {}

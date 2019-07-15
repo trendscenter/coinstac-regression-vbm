@@ -81,16 +81,6 @@ def local_stats_to_dict_numba(args, X, y):
 
     pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
 
-    #    keys = ["beta", "sse", "pval", "tval", "rsquared"]
-    #
-    #    values1 = pd.DataFrame(
-    #        list(
-    #            zip(params.T.tolist(), sse.tolist(), pvalues.T.tolist(),
-    #                tvalues.T.tolist(), rsquared.tolist())),
-    #        columns=keys)
-    #
-    #    local_stats_list = values1.to_dict(orient='records')
-
     beta_vector = params.T.tolist()
 
     print_pvals(args, pvalues.T, tvalues.T, X_labels)
@@ -153,13 +143,11 @@ def merging_globals(X, site_covar_dict, dict_, key):
     return X
 
 
-# TODO: Right now this only works for 'site' covariate. Need to extend to other
-#    categorial covariates as well
 def add_site_covariates(args, original_args, X):
     """Add site covariates based on information gathered from all sites
     """
     input_ = args["input"]
-    all_sites = input_["site_list"]
+    all_sites = input_["covar_keys"]
     glob_uniq_ct = input_["global_unique_count"]
 
     # Read original covariate_info

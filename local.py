@@ -15,7 +15,7 @@ from numba import jit
 import regression as reg
 from local_ancillary import (add_site_covariates, local_stats_to_dict_numba,
                              mean_and_len_y)
-from parsers import parse_for_site, vbm_parser
+from parsers import parse_for_categorical, vbm_parser
 from rw_utils import read_file, write_file
 
 warnings.simplefilter("ignore")
@@ -45,9 +45,12 @@ def calc_Xtransposey_local(biased_X, y):
 def local_0(args):
     """ The first function in the local computation chain
     """
-    site_dict = parse_for_site(args)
+    categorical_dict = parse_for_categorical(args)
 
-    output_dict = {"site_dict": site_dict, "computation_phase": "local_0"}
+    output_dict = {
+        "categorical_dict": categorical_dict,
+        "computation_phase": "local_0"
+    }
     cache_dict = {}
 
     computation_output_dict = {

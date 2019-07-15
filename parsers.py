@@ -128,7 +128,7 @@ def parse_for_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0][:25]
+    covar_data = covar_info[0][0]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
@@ -153,20 +153,17 @@ def parse_for_covar_info(args):
     return covar_info, covar_types
 
 
-def parse_for_site(args):
+def parse_for_categorical(args):
     """Return unique subsites as a dictionary
     """
     X, _ = parse_for_covar_info(args)
 
-    # TODO: Finish this generalization for site_dict
     site_dict1 = dict()
     for col in X:
         if X[col].dtype == object:
-            site_dict1[col] = dict(list(enumerate(X[col].unique())))
+            site_dict1[col] = list(X[col].unique())
 
-    site_dict = dict(list(enumerate(X['site'].unique())))
-
-    return site_dict
+    return site_dict1
 
 
 def create_dummies(data_f, cols, drop_flag=True):
