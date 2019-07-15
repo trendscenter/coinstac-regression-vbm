@@ -50,7 +50,7 @@ def average_nifti(args):
     """
     covar_x, _ = parse_for_covar_info(args)
 
-    appended_data = []
+    appended_data = 0
     for image in covar_x.index:
         try:
             image_data = nib.load(
@@ -61,7 +61,7 @@ def average_nifti(args):
                 covar_x.drop(index=image, inplace=True)
                 continue
             else:
-                appended_data.append(image_data)
+                appended_data += image_data
         except FileNotFoundError:
             covar_x.drop(index=image, inplace=True)
             continue
@@ -71,12 +71,15 @@ def average_nifti(args):
     header = sample_image.header
     affine = sample_image.affine
 
-    avg_nifti = sum(appended_data) / len(appended_data)
+    avg_nifti = appended_data / len(covar_x.index)
 
     clipped_img = nib.Nifti1Image(avg_nifti, affine, header)
     output_file = os.path.join(args["state"]["transferDirectory"],
                                'avg_nifti.nii')
     nib.save(clipped_img, output_file)
+
+    y_file = os.path.join(args["state"]["cacheDirectory"], 'y_file')
+    np.save(y_file, avg_nifti)
 
 
 def local_0(args):

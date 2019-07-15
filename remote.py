@@ -147,7 +147,6 @@ def remote_1(args):
         "mean_y_global": mean_y_global.tolist(),
         "dof_global": dof_global.tolist(),
         "X_labels": X_labels,
-        #        "y_labels": y_labels,
         "local_stats_dict": all_local_stats_dicts
     }
 
