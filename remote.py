@@ -7,6 +7,7 @@ regression with decentralized statistic calculation
 import os
 import sys
 
+import nibabel as nib
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -30,6 +31,36 @@ def return_uniques_and_counts(df):
     return keys, count
 
 
+def calculate_mask(args):
+    """calculating the average of all masks
+    """
+    input_ = args["input"]
+    site_ids = input_.keys()
+    avg_of_all = sum([
+        nib.load(
+            os.path.join(args["state"]["baseDirectory"], site,
+                         input_[site]['avg_nifti'])).get_fdata()
+        for site in input_
+    ]) / len(site_ids)
+
+    # Threshold binarizer
+    threshold = 0.20
+
+    mask_info = avg_of_all > threshold
+    mask_info = mask_info.astype(int)
+
+    user_id = list(input_)[0]
+    principal_image = nib.load(
+        os.path.join(args["state"]["baseDirectory"], user_id,
+                     input_[user_id]['avg_nifti']))
+    header = principal_image.header
+    affine = principal_image.affine
+
+    clipped_img = nib.Nifti1Image(mask_info, affine, header)
+    output_file = os.path.join(args["state"]["transferDirectory"], 'mask.nii')
+    nib.save(clipped_img, output_file)
+
+
 def remote_0(args):
     """ The first function in the remote computation chain
     """
@@ -46,6 +77,7 @@ def remote_0(args):
         "output": {
             "covar_keys": covar_keys,
             "global_unique_count": unique_count,
+            "mask": 'mask.nii',
             "computation_phase": "remote_0"
         },
         "cache": {}

@@ -4,9 +4,11 @@
 This script includes the local computations for decentralized regression
 (normal equation) including decentralized statistic calculation
 """
+import os
 import sys
 import warnings
 
+import nibabel as nib
 import numpy as np
 import pandas as pd
 import ujson as json
@@ -15,7 +17,7 @@ from numba import jit
 import regression as reg
 from local_ancillary import (add_site_covariates, local_stats_to_dict_numba,
                              mean_and_len_y)
-from parsers import parse_for_categorical, vbm_parser
+from parsers import parse_for_categorical, parse_for_covar_info, vbm_parser
 from rw_utils import read_file, write_file
 
 warnings.simplefilter("ignore")
@@ -42,13 +44,50 @@ def calc_Xtransposey_local(biased_X, y):
     return mult(biased_X.T, y)
 
 
+def average_nifti(args):
+    """
+    Reads in all the nifti images and calculates their average
+    """
+    covar_x, _ = parse_for_covar_info(args)
+
+    appended_data = []
+    for image in covar_x.index:
+        try:
+            image_data = nib.load(
+                os.path.join(args["state"]["baseDirectory"],
+                             image)).get_fdata()
+            if np.all(np.isnan(image_data)) or np.count_nonzero(
+                    image_data) == 0 or image_data.size == 0:
+                covar_x.drop(index=image, inplace=True)
+                continue
+            else:
+                appended_data.append(image_data)
+        except FileNotFoundError:
+            covar_x.drop(index=image, inplace=True)
+            continue
+
+    sample_image = nib.load(
+        os.path.join(args["state"]["baseDirectory"], covar_x.index[0]))
+    header = sample_image.header
+    affine = sample_image.affine
+
+    avg_nifti = sum(appended_data) / len(appended_data)
+
+    clipped_img = nib.Nifti1Image(avg_nifti, affine, header)
+    output_file = os.path.join(args["state"]["transferDirectory"],
+                               'avg_nifti.nii')
+    nib.save(clipped_img, output_file)
+
+
 def local_0(args):
     """ The first function in the local computation chain
     """
     categorical_dict = parse_for_categorical(args)
+    average_nifti(args)
 
     output_dict = {
         "categorical_dict": categorical_dict,
+        "avg_nifti": "avg_nifti.nii",
         "computation_phase": "local_0"
     }
     cache_dict = {}
