@@ -156,103 +156,57 @@ def parse_for_site(args):
     return site_dict
 
 
-def create_dummies(data_frame, cols, drop_flag=True):
+def create_dummies(data_f, cols, drop_flag=True):
     """ Create dummy columns
     """
-    return pd.get_dummies(data_frame, columns=cols, drop_first=drop_flag)
+    return pd.get_dummies(data_f, columns=cols, drop_first=drop_flag)
 
 
-def perform_encoding(data_frame, tag='local'):
+def perform_encoding(data_f, exclude_cols=(' ')):
     """Perform encoding of various categorical variables
     """
-    cols_bool = [col for col in data_frame if data_frame[col].dtype == bool]
-    cols_categorical = [
-        col for col in data_frame if data_frame[col].dtype == object
-    ]
+    cols_bool = [col for col in data_f if data_f[col].dtype == bool]
+    cols_categorical = [col for col in data_f if data_f[col].dtype == object]
+    cols_mono = [col for col in data_f.columns if data_f[col].nunique() == 1]
+
+    for word in cols_mono:
+        if word.startswith(exclude_cols):
+            cols_mono.remove(word)
 
     # Working with "boolean" type covariates
     # uint8 instead of int64 saves memory
-    if cols_bool:
-        for column in cols_bool:
-            data_frame[column] = data_frame[column].astype('u1')
+    for column in cols_bool:
+        data_f[column] = data_f[column].astype('u1')
 
     # Working with "string"/object type covariates
-    if cols_categorical:
-        cols_polychot = [
-            col for col in cols_categorical if data_frame[col].nunique() > 2
-        ]
+    cols_polychot = [
+        col for col in cols_categorical if data_f[col].nunique() > 2
+    ]
 
-        cols_dichot = [
-            col for col in cols_categorical if data_frame[col].nunique() == 2
-        ]
-
-    cols_mono = [
-        col for col in data_frame.columns if data_frame[col].nunique() == 1
+    cols_dichot = [
+        col for col in cols_categorical if data_f[col].nunique() == 2
     ]
 
     # One-hot encoding (polychotomous variables)
-    if cols_polychot:
-        data_frame = create_dummies(data_frame, cols_polychot, False)
+    data_f = create_dummies(data_f, cols_polychot, False)
 
     # Binary encoding (dichotomous variables)
-    if cols_dichot:
-        data_frame = create_dummies(data_frame, cols_dichot, True)
+    data_f = create_dummies(data_f, cols_dichot, True)
 
-    data_frame.dropna(axis=0, how='any', inplace=True)
+    #        selected_covar = selected_covar.loc[:, (
+    #            selected_covar != selected_covar.iloc[0]).any()]
+    data_f.drop(axis='columns', columns=cols_mono, inplace=True)
+    data_f.dropna(axis=0, how='any', inplace=True)
 
-    if tag == "local":
-        #        selected_covar = selected_covar.loc[:, (
-        #            selected_covar != selected_covar.iloc[0]).any()]
-        data_frame.drop(axis='columns', columns=cols_mono, inplace=True)
-
-    return data_frame
+    return data_f
 
 
-def vbm_parser(args, tag="local"):
+def vbm_parser(args):
     """Parse the nifti (.nii) specific inputspec.json and return the
     covariate matrix (X) as well the dependent matrix (y) as dataframes
     """
-    selected_covar, covar_types = parse_for_covar_info(args)
-
+    selected_covar, _ = parse_for_covar_info(args)
     selected_covar = perform_encoding(selected_covar)
-
-    #    # Working with "boolean" type covariates
-    #    # uint8 instead of int64 saves memory
-    #    bool_x = [x == 'boolean' for x in covar_types]
-    #    if bool_x:
-    #        for column in selected_covar.columns[bool_x]:
-    #            selected_covar[column] = selected_covar[column].astype('u1')
-    #
-    #    # Working with "string" type covariates
-    #    categorical_x = [x == 'string' for x in covar_types]
-    #    if categorical_x:
-    #        cols_categorical = selected_covar.columns[categorical_x]
-    #
-    #        cols_polychot = [
-    #            col for col in cols_categorical
-    #            if selected_covar[col].nunique() > 2
-    #        ]
-    #
-    #        cols_dichot = [
-    #            col for col in cols_categorical
-    #            if selected_covar[col].nunique() == 2
-    #        ]
-    #
-    #        cols_mono = [
-    #            col for col in selected_covar.columns
-    #            if selected_covar[col].nunique() == 1
-    #        ]
-    #
-    #    # One-hot encoding (polychotomous variables)
-    #    if cols_polychot:
-    #        selected_covar = create_dummies(selected_covar, cols_polychot, False)
-    #
-    #    # Binary encoding (dichotomous variables)
-    #    if cols_dichot:
-    #        selected_covar = create_dummies(selected_covar, cols_dichot, True)
-    #
-    #    selected_covar.dropna(axis=0, how='any', inplace=True)
-
     covar_info, y_info = nifti_to_data(args, selected_covar)
 
     return (covar_info, y_info)

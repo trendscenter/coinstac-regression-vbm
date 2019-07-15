@@ -27,31 +27,14 @@ def remote_0(args):
         for site in input_list.keys()
     }
 
-    all_sites = list(extract_sites(site_info))
+    # TODO: Extend this function to include other covariates as well
+    all_sites = {"site": list(extract_sites(site_info))}
+    global_unique_count = {key: len(val) for key, val in all_sites.items()}
 
     computation_output_dict = {
         "output": {
             "site_list": all_sites,
-            "computation_phase": "remote_0"
-        },
-        "cache": {}
-    }
-
-    return json.dumps(computation_output_dict)
-
-
-def remote_00(args):
-    """ The first function in the remote computation chain"""
-    input_list = args["input"]
-    site_ids = list(input_list.keys())
-    site_covar_list = [
-        '{}_{}'.format('site', label) for index, label in enumerate(site_ids)
-        if index
-    ]
-
-    computation_output_dict = {
-        "output": {
-            "site_covar_list": site_covar_list,
+            "global_unique_count": global_unique_count,
             "computation_phase": "remote_0"
         },
         "cache": {}

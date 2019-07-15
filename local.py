@@ -15,7 +15,7 @@ from numba import jit
 import regression as reg
 from local_ancillary import (add_site_covariates, local_stats_to_dict_numba,
                              mean_and_len_y)
-from parsers import parse_for_site, vbm_parser, parse_for_covar_info
+from parsers import parse_for_site, vbm_parser
 from rw_utils import read_file, write_file
 
 warnings.simplefilter("ignore")
@@ -67,13 +67,14 @@ def local_1(args):
     regularizer_l2 = original_args['input']['lambda']
 
     # Local Statistics
-    X, y = vbm_parser(original_args, "local")
+    X, y = vbm_parser(original_args)
     meanY_vector, lenY_vector = mean_and_len_y(y)
     _, local_stats_list = local_stats_to_dict_numba(args, X, y)
 
+    # Global Statistics
     augmented_X = add_site_covariates(args, original_args, X)
     X_labels = list(augmented_X.columns)
-    biased_X = augmented_X.values
+    biased_X = augmented_X.values.astype('float64')
 
     #    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
     #    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
@@ -93,11 +94,6 @@ def local_1(args):
     cache_dict = {
         "covariates": augmented_X.to_json(orient='split'),
     }
-
-    #    local_output = os.path.join(args['state']['transferDirectory'],
-    #                                'local_output')
-    #    with open(local_output, 'w') as file_h:
-    #        json.dump(output_dict, file_h)
 
     write_file(args, output_dict, 'output', 'local_output')
 
@@ -141,11 +137,6 @@ def local_2(args):
     cache_list = args["cache"]
     input_list = args["input"]
 
-    #    args_file = os.path.join(args['state']['cacheDirectory'], 'args_file')
-    #
-    #    with open(args_file, 'r') as file_h:
-    #        original_args = json.load(file_h)
-    #
     original_args = read_file(args, 'cache', 'args_file')
 
     X = pd.read_json(cache_list["covariates"], orient='split')
