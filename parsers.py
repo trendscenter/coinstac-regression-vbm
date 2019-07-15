@@ -203,11 +203,8 @@ def perform_encoding(data_f, exclude_cols=(' ')):
     # Binary encoding (dichotomous variables)
     data_f = create_dummies(data_f, cols_dichot, True)
 
-    #        selected_covar = selected_covar.loc[:, (
-    #            selected_covar != selected_covar.iloc[0]).any()]
-    data_f.drop(axis='columns', columns=cols_mono, inplace=True)
+    data_f.drop(columns=cols_mono, inplace=True)
     data_f.dropna(axis=0, how='any', inplace=True)
-
     data_f = sm.add_constant(data_f, has_constant='add')
 
     return data_f
