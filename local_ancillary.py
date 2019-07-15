@@ -24,7 +24,8 @@ MASK = os.path.join('/computation', 'mask_2mm.nii')
 
 
 def mean_and_len_y(y):
-    """Caculate the mean and length of each y vector"""
+    """Caculate the mean and length of each y vector
+    """
     meanY_vector = y.mean(axis=0)
     #    lenY_vector = y.count(axis=0)
     lenY_vector = np.count_nonzero(~np.isnan(y), axis=0)
@@ -34,7 +35,8 @@ def mean_and_len_y(y):
 
 @jit(nopython=True)
 def gather_local_stats(X, y):
-    """Calculate local statistics"""
+    """Calculate local statistics
+    """
     size_y = y.shape[1]
 
     params = np.zeros((X.shape[1], size_y))
@@ -69,7 +71,8 @@ def gather_local_stats(X, y):
 
 
 def local_stats_to_dict_numba(args, X, y):
-    """Wrap local statistics into a dictionary to be sent to the remote"""
+    """Wrap local statistics into a dictionary to be sent to the remote
+    """
     X1 = sm.add_constant(X)
 
     X_labels = list(X1.columns)
@@ -92,7 +95,8 @@ def local_stats_to_dict_numba(args, X, y):
 
 
 def local_stats_to_dict(X, y):
-    """Calculate local statistics"""
+    """Calculate local statistics
+    """
     y_labels = list(y.columns)
 
     biased_X = sm.add_constant(X)

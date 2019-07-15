@@ -20,7 +20,8 @@ MASK = os.path.join('/computation', 'mask_2mm.nii')
 
 
 def encode_png(args):
-    # Begin code to serialize png images
+    """Begin code to serialize png images
+    """
     png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
 
     encoded_png_files = []
