@@ -14,12 +14,11 @@ import scipy as sp
 from numba import jit, prange
 
 from ancillary import encode_png, print_beta_images, print_pvals
-from parsers import parse_for_covar_info
+from parsers import parse_for_covar_info, perform_encoding
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
-
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
@@ -166,6 +165,8 @@ def add_site_covariates0(args, X):
 
 
 def add_site_covariates00(args, original_args, X):
+    """Perform dummy encoding on sub-sites
+    """
     site_covar_json = args["input"]["site_covar_dict"]
     site_covar_dict = pd.read_json(site_covar_json)
 
@@ -182,23 +183,27 @@ def add_site_covariates00(args, original_args, X):
     return biased_X
 
 
+# TODO: Right now this only works for 'site' covariate. Need to extend to other
+#    categorial covariates as well
 def add_site_covariates(args, original_args, X):
-    """Add site covariates based on information gathered from all sites"""
+    """Add site covariates based on information gathered from all sites
+    """
     all_sites = args["input"]["site_list"]
 
+    # Read original covariate_info
     X, _ = parse_for_covar_info(original_args)
-    X = X.apply(pd.to_numeric, errors='ignore')
-    biased_X = sm.add_constant(X)
 
     site_covar_dict = pd.get_dummies(all_sites, prefix='site')
     site_covar_dict.rename(index=dict(enumerate(all_sites)), inplace=True)
     site_covar_dict.index.name = 'site'
     site_covar_dict.reset_index(level=0, inplace=True)
 
-    biased_X = biased_X.merge(site_covar_dict, left_on='site', right_on='site')
+    biased_X = X.merge(site_covar_dict, left_on='site', right_on='site')
     biased_X.drop(columns='site', inplace=True)
 
-    biased_X = pd.get_dummies(biased_X, drop_first=True)
-    biased_X = biased_X * 1
+    biased_X = perform_encoding(biased_X)
+
+    # TODO: Probably I can add it later in the end. Check.
+    biased_X = sm.add_constant(X)
 
     return biased_X
