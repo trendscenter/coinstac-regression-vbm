@@ -38,21 +38,22 @@ def one_shot_regression(X, y, lamb):
         Utilizes sklearn.linear_model.Ridge to return a weight vector for the
         regression  model y = w*biased_X + epsilon
       """
-#    clf = sklearn.linear_model.Ridge(
-#        alpha=lamb,
-#        fit_intercept=True,
-#        normalize=False,
-#        copy_X=True,
-#        max_iter=None,
-#        tol=0.001,
-#        solver='auto',
-#        random_state=None)
-#
-#    result = clf.fit(X, y)
-#    beta_vector = np.insert(result.coef_, 0, result.intercept_)
+    #    clf = sklearn.linear_model.Ridge(
+    #        alpha=lamb,
+    #        fit_intercept=True,
+    #        normalize=False,
+    #        copy_X=True,
+    #        max_iter=None,
+    #        tol=0.001,
+    #        solver='auto',
+    #        random_state=None)
+    #
+    #    result = clf.fit(X, y)
+    #    beta_vector = np.insert(result.coef_, 0, result.intercept_)
     model = sm.OLS(y, X.astype(float)).fit_regularized(alpha=lamb, L1_wt=0)
 
     return model.params
+
 
 def y_estimate(biased_X, beta_vector):
     """Returns the target estimates (predicted values of the target)
@@ -88,6 +89,7 @@ def sum_squared_error(biased_X, y, beta_vector):
     """
     return np.linalg.norm(y - y_estimate(biased_X, beta_vector))**2
 
+
 def sum_squared_total(y):
     """Calculates the total sum of squares
 
@@ -101,6 +103,7 @@ def sum_squared_total(y):
         SST = ||y - y_mean||^2 where ||.|| --> l2-norm
     """
     return np.linalg.norm(y - np.mean(y))**2
+
 
 def r_square(biased_X, y, beta_vector):
     """Calculates R-squared value (coefficient of determination)
@@ -121,6 +124,7 @@ def r_square(biased_X, y, beta_vector):
     SST = sum_squared_total(y)
 
     return 1 - SSE / SST
+
 
 def beta_var_covar_matrix(biased_X, y, beta_vector):
     """Calculates the variance-covariance matrix of the coefficient vector
@@ -143,6 +147,7 @@ def beta_var_covar_matrix(biased_X, y, beta_vector):
     MSE = SSE / dof
 
     return MSE * sp.linalg.inv(np.dot(biased_X.T, biased_X))
+
 
 def t_value(biased_X, y, beta_vector):
     """Returns the t-statistic for each coefficient

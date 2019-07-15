@@ -15,9 +15,10 @@ from nilearn import plotting
 
 #fp = open('/output/memory_log', 'a+')
 
-np.seterr(divide = 'ignore')
+np.seterr(divide='ignore')
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
+
 
 #@profile(stream=fp)
 def encode_png(args):
@@ -31,8 +32,9 @@ def encode_png(args):
             with open(mrn_image, "rb") as imageFile:
                 mrn_image_str = base64.b64encode(imageFile.read())
             encoded_png_files.append(mrn_image_str)
-            
-    return dict(zip([f for f in png_files if f.endswith('.png')], encoded_png_files))
+
+    return dict(
+        zip([f for f in png_files if f.endswith('.png')], encoded_png_files))
 
 
 #@profile(stream=fp)
@@ -51,15 +53,14 @@ def print_beta_images(args, avg_beta_vector, X_labels):
 
         clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
         output_file = os.path.join(images_folder, image_string)
-        
+
         nib.save(clipped_img, output_file + '.nii')
-        
-        plotting.plot_stat_map(
-            clipped_img,
-            output_file=output_file,
-            display_mode='ortho',
-            colorbar=True)
-        
+
+        plotting.plot_stat_map(clipped_img,
+                               output_file=output_file,
+                               display_mode='ortho',
+                               colorbar=True)
+
 
 #@profile(stream=fp)
 def print_pvals(args, ps_global, ts_global, X_labels):
@@ -73,19 +74,18 @@ def print_pvals(args, ps_global, ts_global, X_labels):
 
     for column in p_df.columns:
         new_data = np.zeros(mask.shape)
-        new_data[mask.get_data() >
-                 0] = -1 * np.log10(p_df[column]) * np.sign(t_df[column])
-        
+        new_data[mask.get_data() > 0] = -1 * np.log10(p_df[column]) * np.sign(
+            t_df[column])
+
         image_string = 'pval_' + str(column)
 
         clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
         output_file = os.path.join(images_folder, image_string)
 
         nib.save(clipped_img, output_file + '.nii')
-        
+
         #        thresholdh = max(np.abs(p_df[column]))
-        plotting.plot_stat_map(
-            clipped_img,
-            output_file=output_file,
-            display_mode='ortho',
-            colorbar=True)
+        plotting.plot_stat_map(clipped_img,
+                               output_file=output_file,
+                               display_mode='ortho',
+                               colorbar=True)

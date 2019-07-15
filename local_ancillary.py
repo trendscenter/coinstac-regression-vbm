@@ -141,49 +141,9 @@ def local_stats_to_dict(X, y):
     return beta_vector, local_stats_list
 
 
-#def add_site_covariates0(args, X):
-#    """Add site specific columns to the covariate matrix"""
-#    biased_X = sm.add_constant(X)
-#    site_covar_list = args["input"]["site_covar_list"]
-#
-#    site_matrix = np.zeros((np.array(X).shape[0], len(site_covar_list)),
-#                           dtype=int)
-#    site_df = pd.DataFrame(site_matrix, columns=site_covar_list)
-#
-#    select_cols = [
-#        col for col in site_df.columns if args["state"]["clientId"] in col
-#    ]
-#
-#    site_df[select_cols] = 1
-#
-#    biased_X.reset_index(drop=True, inplace=True)
-#    site_df.reset_index(drop=True, inplace=True)
-#
-#    augmented_X = pd.concat([biased_X, site_df], axis=1)
-#
-#    return augmented_X
-#
-#
-#def add_site_covariates00(args, original_args, X):
-#    """Perform dummy encoding on sub-sites
-#    """
-#    site_covar_json = args["input"]["site_covar_dict"]
-#    site_covar_dict = pd.read_json(site_covar_json)
-#
-#    X = parse_for_covar_info(original_args)
-#    X = X.apply(pd.to_numeric, errors='ignore')
-#    biased_X = sm.add_constant(X)
-#
-#    biased_X = biased_X.merge(site_covar_dict, left_on='site', right_on='site')
-#    biased_X.drop(columns='site', inplace=True)
-#
-#    biased_X = pd.get_dummies(biased_X, drop_first=True)
-#    biased_X = biased_X * 1
-#
-#    return biased_X
-
-
 def merging_globals(X, site_covar_dict, dict_, key):
+    """Merge the actual data frame with the created dummy matrix
+    """
     site_covar_dict.rename(index=dict(enumerate(dict_[key])), inplace=True)
     site_covar_dict.index.name = key
     site_covar_dict.reset_index(level=0, inplace=True)
@@ -208,7 +168,7 @@ def add_site_covariates(args, original_args, X):
     to_exclude = []
     for key, val in glob_uniq_ct.items():
         if val == 1:
-            X.drop(axis='columns', columns=key, inplace=True)
+            X.drop(columns=key, inplace=True)
         elif val == 2:
             covar_dict = pd.get_dummies(all_sites[key],
                                         prefix=key,
@@ -224,6 +184,5 @@ def add_site_covariates(args, original_args, X):
             to_exclude.append(key)
 
     biased_X = perform_encoding(X, exclude_cols=tuple(to_exclude))
-    biased_X = sm.add_constant(biased_X, has_constant='add')
 
     return biased_X

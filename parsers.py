@@ -6,10 +6,15 @@ Created on Wed Mar 21 19:25:26 2018
 @author: Harshvardhan
 """
 import os
+import warnings
 
 import nibabel as nib
 import numpy as np
 import pandas as pd
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import statsmodels.api as sm
 
 MASK = os.path.join('/computation', 'mask_2mm.nii')
 
@@ -46,7 +51,8 @@ def parse_for_y(args, y_files, y_labels):
 
 def fsl_parser(args):
     """Parse the freesurfer (fsl) specific inputspec.json and return the
-    covariate matrix (X) as well the dependent matrix (y) as dataframes"""
+    covariate matrix (X) as well the dependent matrix (y) as dataframes
+    """
     input_list = args["input"]
     X_info = input_list["covariates"]
     y_info = input_list["data"]
@@ -151,6 +157,13 @@ def parse_for_site(args):
     """Return unique subsites as a dictionary
     """
     X, _ = parse_for_covar_info(args)
+
+    # TODO: Finish this generalization for site_dict
+    site_dict1 = dict()
+    for col in X:
+        if X[col].dtype == object:
+            site_dict1[col] = dict(list(enumerate(X[col].unique())))
+
     site_dict = dict(list(enumerate(X['site'].unique())))
 
     return site_dict
@@ -197,6 +210,8 @@ def perform_encoding(data_f, exclude_cols=(' ')):
     #            selected_covar != selected_covar.iloc[0]).any()]
     data_f.drop(axis='columns', columns=cols_mono, inplace=True)
     data_f.dropna(axis=0, how='any', inplace=True)
+
+    data_f = sm.add_constant(data_f, has_constant='add')
 
     return data_f
 
