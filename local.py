@@ -108,6 +108,8 @@ def local_0(args):
 def local_1(args):
     """ The second function in the local computation chain
     """
+    cache_ = args["state"]["cacheDirectory"]
+
     original_args = read_file(args, 'cache', 'args_file')
     regularizer_l2 = original_args['input']['lambda']
 
@@ -127,6 +129,10 @@ def local_1(args):
     XtransposeX_local = calc_XtransposeX_local(biased_X)
     Xtransposey_local = calc_Xtransposey_local(biased_X, y)
 
+    # Writing covariates and dependents to cache as files
+    np.save(os.path.join(cache_, 'X.npy'), biased_X)
+    np.save(os.path.join(cache_, 'y.npy'), y)
+
     output_dict = {
         "XtransposeX_local": XtransposeX_local.tolist(),
         "Xtransposey_local": Xtransposey_local.tolist(),
@@ -137,7 +143,8 @@ def local_1(args):
         "lambda": regularizer_l2
     }
     cache_dict = {
-        "covariates": augmented_X.to_json(orient='split'),
+        "covariates": "X.npy",
+        "dependents": "y.npy"
     }
 
     write_file(args, output_dict, 'output', 'local_output')
@@ -179,17 +186,16 @@ def local_2(args):
         After receiving  the mean_y_global, calculate the SSE_local,
         SST_local and varX_matrix_local
     """
-    cache_list = args["cache"]
-    input_list = args["input"]
+    state_ = args["state"]
+    cache_ = args["cache"]
+    cache_dir = state_["cacheDirectory"]
+    input_ = args["input"]
 
-    original_args = read_file(args, 'cache', 'args_file')
+    biased_X = np.load(os.path.join(cache_dir, cache_["covariates"]))
+    y = np.load(os.path.join(cache_dir, cache_["dependents"]))
 
-    X = pd.read_json(cache_list["covariates"], orient='split')
-    (_, y) = vbm_parser(original_args)
-    biased_X = np.array(X)
-
-    avg_beta_vector = input_list["avg_beta_vector"]
-    mean_y_global = input_list["mean_y_global"]
+    avg_beta_vector = input_["avg_beta_vector"]
+    mean_y_global = input_["mean_y_global"]
 
     y = y.astype('float64')
 
