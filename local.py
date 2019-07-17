@@ -84,8 +84,8 @@ def local_0(args):
     average_nifti(args)
 
     # TODO: Put these things in the UI
-    threshold = 0.2
-    voxel_size = 4
+    threshold = args["input"]["threshold"]
+    voxel_size = args["input"]["voxel_size"]
 
     output_dict = {
         "categorical_dict": categorical_dict,

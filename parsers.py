@@ -19,7 +19,6 @@ with warnings.catch_warnings():
     import statsmodels.api as sm
 
 MASK = 'mask.nii'
-VOXEL_SIZE = 4
 
 
 def parse_for_y(args, y_files, y_labels):
@@ -96,6 +95,7 @@ def fsl_parser(args):
 def nifti_to_data(args, X):
     """Read nifti files as matrices
     """
+    voxel_size = args["input"]["voxel_size"]
     try:
         mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
                                           MASK)).get_fdata()
@@ -105,13 +105,14 @@ def nifti_to_data(args, X):
     appended_data = []
 
     mni_image = nib.load(
-        os.path.join('/computation', 'MNI152_T1_4mm_brain.nii'))
+        os.path.join('/computation',
+                     'MNI152_T1_' + str(voxel_size) + 'mm_brain.nii'))
 
     for image in X.index:
         input_file = os.path.join(args["state"]["baseDirectory"], image)
         output_file = os.path.join(args["state"]["cacheDirectory"], image)
         try:
-            if nib.load(input_file).header.get_zooms()[0] == VOXEL_SIZE:
+            if nib.load(input_file).header.get_zooms()[0] == voxel_size:
                 copyfile(input_file, output_file)
             else:
                 clipped_img = resample_to_img(input_file, mni_image)
@@ -140,10 +141,7 @@ def parse_for_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0][:30]
-#    covar_data1 = covar_info[0][0][1200:1225]
-#    covar_data2 = covar_info[0][0][1140:1160]
-#    covar_data = [covar_info[0][0][0], *covar_data1, *covar_data2]
+    covar_data = covar_info[0][0]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
@@ -195,12 +193,6 @@ def create_dummies(data_f, cols, drop_flag=True):
 def perform_encoding(args, data_f, exclude_cols=(' ')):
     """Perform encoding of various categorical variables
     """
-#    cols_bool = [col for col in data_f if data_f[col].dtype == bool]
-#    # Working with "boolean" type covariates
-#    # uint8 instead of int64 saves memory
-#    for column in cols_bool:
-#        data_f[column] = data_f[column].astype('object')
-
     cols_categorical = [col for col in data_f if data_f[col].dtype == object]
     cols_mono = [col for col in data_f.columns if data_f[col].nunique() == 1]
 

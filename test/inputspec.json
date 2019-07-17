@@ -3782,8 +3782,11 @@
   "lambda": {
     "value": 0
   },
-    "base_site": {
-    "value": "IA"
+    "threshold": {
+    "value": 0.2
+},
+"voxel_size": {
+    "value": 4
 }
 },
 {
@@ -7296,8 +7299,11 @@
   "lambda": {
     "value": 0
   },
-    "base_site": {
-    "value": "IA"
+    "threshold": {
+    "value": 0.2
+  },
+  "voxel_size": {
+    "value": 4
   }
 }
 ]
