@@ -140,9 +140,10 @@ def parse_for_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0]
-    #    covar_data2 = covar_info[0][0][1140:1160]
-    #    covar_data = [covar_info[0][0][0], *covar_data1, *covar_data2]
+    covar_data = covar_info[0][0][:30]
+#    covar_data1 = covar_info[0][0][1200:1225]
+#    covar_data2 = covar_info[0][0][1140:1160]
+#    covar_data = [covar_info[0][0][0], *covar_data1, *covar_data2]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
@@ -153,6 +154,11 @@ def parse_for_covar_info(args):
     # Selecting only the columns sepcified in the UI
     # TODO: This could be redundant (check with Ross)
     covar_info = covar_df[covar_labels]
+
+    # convert bool to categorical as soon as possible
+    for column in covar_info:
+        if covar_info[column].dtype == bool:
+            covar_info[column] = covar_info[column].astype('object')
 
     # Checks for existence of files and if they don't delete row
     for file in covar_info.index:
@@ -189,18 +195,18 @@ def create_dummies(data_f, cols, drop_flag=True):
 def perform_encoding(args, data_f, exclude_cols=(' ')):
     """Perform encoding of various categorical variables
     """
-    cols_bool = [col for col in data_f if data_f[col].dtype == bool]
+#    cols_bool = [col for col in data_f if data_f[col].dtype == bool]
+#    # Working with "boolean" type covariates
+#    # uint8 instead of int64 saves memory
+#    for column in cols_bool:
+#        data_f[column] = data_f[column].astype('object')
+
     cols_categorical = [col for col in data_f if data_f[col].dtype == object]
     cols_mono = [col for col in data_f.columns if data_f[col].nunique() == 1]
 
     for word in cols_mono:
         if word.startswith(exclude_cols):
             cols_mono.remove(word)
-
-    # Working with "boolean" type covariates
-    # uint8 instead of int64 saves memory
-    for column in cols_bool:
-        data_f[column] = data_f[column].astype('u1')
 
     # Working with "string"/object type covariates
     cols_polychot = [
