@@ -7,16 +7,18 @@ Created on Wed Mar 21 19:25:26 2018
 """
 import os
 import warnings
+from shutil import copyfile
 
 import nibabel as nib
 import numpy as np
 import pandas as pd
+from nilearn.image import resample_to_img
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
-MASK = os.path.join('/computation', 'mask_2mm.nii')
+MASK = 'mask.nii'
 
 
 def parse_for_y(args, y_files, y_labels):
@@ -93,19 +95,30 @@ def fsl_parser(args):
 def nifti_to_data(args, X):
     """Read nifti files as matrices
     """
+    voxel_size = args["input"]["voxel_size"]
     try:
-        mask_data = nib.load(MASK).get_data()
+        mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
+                                          MASK)).get_fdata()
     except FileNotFoundError:
         raise Exception("Missing Mask at " + args["state"]["clientId"])
 
     appended_data = []
 
-    # Extract Data (after applying mask)
+    mni_image = nib.load(
+        os.path.join('/computation',
+                     'MNI152_T1_' + str(voxel_size) + 'mm_brain.nii'))
+
     for image in X.index:
+        input_file = os.path.join(args["state"]["baseDirectory"], image)
+        output_file = os.path.join(args["state"]["cacheDirectory"], image)
         try:
-            image_data = np.array(
-                nib.load(os.path.join(args["state"]["baseDirectory"],
-                                      image)).dataobj)
+            if nib.load(input_file).header.get_zooms()[0] == voxel_size:
+                copyfile(input_file, output_file)
+            else:
+                clipped_img = resample_to_img(input_file, mni_image)
+                nib.save(clipped_img, output_file)
+
+            image_data = nib.load(output_file).get_data()
             if np.all(np.isnan(image_data)) or np.count_nonzero(
                     image_data) == 0 or image_data.size == 0:
                 X.drop(index=image, inplace=True)
@@ -140,6 +153,11 @@ def parse_for_covar_info(args):
     # TODO: This could be redundant (check with Ross)
     covar_info = covar_df[covar_labels]
 
+    # convert bool to categorical as soon as possible
+    for column in covar_info:
+        if covar_info[column].dtype == bool:
+            covar_info[column] = covar_info[column].astype('object')
+
     # Checks for existence of files and if they don't delete row
     for file in covar_info.index:
         if not os.path.isfile(os.path.join(state_["baseDirectory"], file)):
@@ -172,21 +190,15 @@ def create_dummies(data_f, cols, drop_flag=True):
     return pd.get_dummies(data_f, columns=cols, drop_first=drop_flag)
 
 
-def perform_encoding(data_f, exclude_cols=(' ')):
+def perform_encoding(args, data_f, exclude_cols=(' ')):
     """Perform encoding of various categorical variables
     """
-    cols_bool = [col for col in data_f if data_f[col].dtype == bool]
     cols_categorical = [col for col in data_f if data_f[col].dtype == object]
     cols_mono = [col for col in data_f.columns if data_f[col].nunique() == 1]
 
     for word in cols_mono:
         if word.startswith(exclude_cols):
             cols_mono.remove(word)
-
-    # Working with "boolean" type covariates
-    # uint8 instead of int64 saves memory
-    for column in cols_bool:
-        data_f[column] = data_f[column].astype('u1')
 
     # Working with "string"/object type covariates
     cols_polychot = [
@@ -215,7 +227,7 @@ def vbm_parser(args):
     covariate matrix (X) as well the dependent matrix (y) as dataframes
     """
     selected_covar, _ = parse_for_covar_info(args)
-    selected_covar = perform_encoding(selected_covar)
     covar_info, y_info = nifti_to_data(args, selected_covar)
+    encoded_covar_info = perform_encoding(args, covar_info)
 
-    return (covar_info, y_info)
+    return (encoded_covar_info, covar_info, y_info)

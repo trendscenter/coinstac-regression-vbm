@@ -11,12 +11,11 @@ import os
 import nibabel as nib
 import numpy as np
 import pandas as pd
-
 from nilearn import plotting
 
 np.seterr(divide='ignore')
 
-MASK = os.path.join('/computation', 'mask_2mm.nii')
+MASK = 'mask.nii'
 
 
 def encode_png(args):
@@ -41,7 +40,10 @@ def print_beta_images(args, avg_beta_vector, X_labels):
 
     images_folder = args["state"]["outputDirectory"]
 
-    mask = nib.load(MASK)
+    try:
+        mask = nib.load(os.path.join(args["state"]["baseDirectory"], MASK))
+    except FileNotFoundError:
+        mask = nib.load(os.path.join(args["state"]["cacheDirectory"], MASK))
 
     for column in beta_df.columns:
         new_data = np.zeros(mask.shape)
@@ -67,7 +69,10 @@ def print_pvals(args, ps_global, ts_global, X_labels):
     # TODO manual entry, remove later
     images_folder = args["state"]["outputDirectory"]
 
-    mask = nib.load(MASK)
+    try:
+        mask = nib.load(os.path.join(args["state"]["baseDirectory"], MASK))
+    except FileNotFoundError:
+        mask = nib.load(os.path.join(args["state"]["cacheDirectory"], MASK))
 
     for column in p_df.columns:
         new_data = np.zeros(mask.shape)

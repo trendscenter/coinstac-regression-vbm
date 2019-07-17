@@ -10,7 +10,6 @@ import warnings
 
 import nibabel as nib
 import numpy as np
-import pandas as pd
 import ujson as json
 from numba import jit
 
@@ -45,17 +44,18 @@ def calc_Xtransposey_local(biased_X, y):
 
 
 def average_nifti(args):
+    """Reads in all the nifti images and calculates their average
     """
-    Reads in all the nifti images and calculates their average
-    """
+    state_ = args["state"]
+    input_dir = state_["baseDirectory"]
+    output_dir = state_["transferDirectory"]
+
     covar_x, _ = parse_for_covar_info(args)
 
     appended_data = 0
     for image in covar_x.index:
         try:
-            image_data = nib.load(
-                os.path.join(args["state"]["baseDirectory"],
-                             image)).get_fdata()
+            image_data = nib.load(os.path.join(input_dir, image)).get_fdata()
             if np.all(np.isnan(image_data)) or np.count_nonzero(
                     image_data) == 0 or image_data.size == 0:
                 covar_x.drop(index=image, inplace=True)
@@ -66,20 +66,15 @@ def average_nifti(args):
             covar_x.drop(index=image, inplace=True)
             continue
 
-    sample_image = nib.load(
-        os.path.join(args["state"]["baseDirectory"], covar_x.index[0]))
+    sample_image = nib.load(os.path.join(input_dir, covar_x.index[0]))
     header = sample_image.header
     affine = sample_image.affine
 
     avg_nifti = appended_data / len(covar_x.index)
 
     clipped_img = nib.Nifti1Image(avg_nifti, affine, header)
-    output_file = os.path.join(args["state"]["transferDirectory"],
-                               'avg_nifti.nii')
+    output_file = os.path.join(output_dir, 'avg_nifti.nii')
     nib.save(clipped_img, output_file)
-
-    y_file = os.path.join(args["state"]["cacheDirectory"], 'y_file')
-    np.save(y_file, avg_nifti)
 
 
 def local_0(args):
@@ -88,8 +83,14 @@ def local_0(args):
     categorical_dict = parse_for_categorical(args)
     average_nifti(args)
 
+    # TODO: Put these things in the UI
+    threshold = args["input"]["threshold"]
+    voxel_size = args["input"]["voxel_size"]
+
     output_dict = {
         "categorical_dict": categorical_dict,
+        "threshold": threshold,
+        "voxel_size": voxel_size,
         "avg_nifti": "avg_nifti.nii",
         "computation_phase": "local_0"
     }
@@ -114,9 +115,9 @@ def local_1(args):
     regularizer_l2 = original_args['input']['lambda']
 
     # Local Statistics
-    X, y = vbm_parser(original_args)
+    encoded_X, X, y = vbm_parser(original_args)
     meanY_vector, lenY_vector = mean_and_len_y(y)
-    _, local_stats_list = local_stats_to_dict_numba(args, X, y)
+    _, local_stats_list = local_stats_to_dict_numba(args, encoded_X, y)
 
     # Global Statistics
     augmented_X = add_site_covariates(args, original_args, X)
@@ -142,10 +143,7 @@ def local_1(args):
         "X_labels": X_labels,
         "lambda": regularizer_l2
     }
-    cache_dict = {
-        "covariates": "X.npy",
-        "dependents": "y.npy"
-    }
+    cache_dict = {"covariates": "X.npy", "dependents": "y.npy"}
 
     write_file(args, output_dict, 'output', 'local_output')
 
