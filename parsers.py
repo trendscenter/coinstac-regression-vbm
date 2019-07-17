@@ -16,7 +16,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
-MASK = os.path.join('/computation', 'mask_2mm.nii')
+MASK = 'mask.nii'
 
 
 def parse_for_y(args, y_files, y_labels):
@@ -94,7 +94,8 @@ def nifti_to_data(args, X):
     """Read nifti files as matrices
     """
     try:
-        mask_data = nib.load(MASK).get_data()
+        mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
+                                          MASK)).get_fdata()
     except FileNotFoundError:
         raise Exception("Missing Mask at " + args["state"]["clientId"])
 

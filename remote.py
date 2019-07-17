@@ -44,12 +44,12 @@ def calculate_mask(args):
     ]) / len(site_ids)
 
     # Threshold binarizer
-    threshold = 0.20
+    user_id = list(input_)[0]
+    threshold = input_[user_id]["threshold"]
 
     mask_info = avg_of_all > threshold
     mask_info = mask_info.astype(int)
 
-    user_id = list(input_)[0]
     principal_image = nib.load(
         os.path.join(args["state"]["baseDirectory"], user_id,
                      input_[user_id]['avg_nifti']))
@@ -57,13 +57,17 @@ def calculate_mask(args):
     affine = principal_image.affine
 
     clipped_img = nib.Nifti1Image(mask_info, affine, header)
-    output_file = os.path.join(args["state"]["transferDirectory"], 'mask.nii')
-    nib.save(clipped_img, output_file)
+    output_file1 = os.path.join(args["state"]["transferDirectory"], 'mask.nii')
+    output_file2 = os.path.join(args["state"]["cacheDirectory"], 'mask.nii')
+
+    nib.save(clipped_img, output_file1)
+    nib.save(clipped_img, output_file2)
 
 
 def remote_0(args):
     """ The first function in the remote computation chain
     """
+    calculate_mask(args)
     input_ = args["input"]
     site_info = {
         site: input_[site]['categorical_dict']

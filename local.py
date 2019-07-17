@@ -88,8 +88,10 @@ def local_0(args):
     categorical_dict = parse_for_categorical(args)
     average_nifti(args)
 
+    threshold = 0.2
     output_dict = {
         "categorical_dict": categorical_dict,
+        "threshold": threshold,
         "avg_nifti": "avg_nifti.nii",
         "computation_phase": "local_0"
     }
@@ -142,10 +144,7 @@ def local_1(args):
         "X_labels": X_labels,
         "lambda": regularizer_l2
     }
-    cache_dict = {
-        "covariates": "X.npy",
-        "dependents": "y.npy"
-    }
+    cache_dict = {"covariates": "X.npy", "dependents": "y.npy"}
 
     write_file(args, output_dict, 'output', 'local_output')
 
