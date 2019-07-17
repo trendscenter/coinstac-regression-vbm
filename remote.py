@@ -16,6 +16,7 @@ from nilearn.image import resample_to_img
 
 import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals
+from rw_utils import read_file
 
 OUTPUT_FROM_LOCAL = 'local_output'
 
@@ -33,14 +34,18 @@ def return_uniques_and_counts(df):
 
 
 def calculate_mask(args):
-    """calculating the average of all masks
+    """Calculates the average of all masks
     """
     input_ = args["input"]
+    state_ = args["state"]
+    input_dir = state_["baseDirectory"]
+    cache_dir = state_["cacheDirectory"]
+    output_dir = state_["transferDirectory"]
+
     site_ids = input_.keys()
     avg_of_all = sum([
-        nib.load(
-            os.path.join(args["state"]["baseDirectory"], site,
-                         input_[site]['avg_nifti'])).get_fdata()
+        nib.load(os.path.join(input_dir, site,
+                              input_[site]['avg_nifti'])).get_fdata()
         for site in input_
     ]) / len(site_ids)
 
@@ -49,33 +54,33 @@ def calculate_mask(args):
     threshold = input_[user_id]["threshold"]
 
     mask_info = avg_of_all > threshold
-    mask_info = mask_info.astype(int)
 
     principal_image = nib.load(
-        os.path.join(args["state"]["baseDirectory"], user_id,
-                     input_[user_id]['avg_nifti']))
+        os.path.join(input_dir, user_id, input_[user_id]['avg_nifti']))
     header = principal_image.header
     affine = principal_image.affine
 
     clipped_img = nib.Nifti1Image(mask_info, affine, header)
 
-    # Resampling (check with Eswar)
+    # TODO: Resampling (check with Eswar)
     voxel_size = input_[user_id]["voxel_size"]
     file = 'MNI152_T1_' + str(voxel_size) + 'mm_brain.nii'
-    mni_image = nib.load(os.path.join('/computation', file))
+    mni_image = os.path.join('/computation', file)
+    # I don't like these above 3 lines of code
+
     clipped_img = resample_to_img(clipped_img,
                                   mni_image,
                                   interpolation='nearest')
 
-    output_file1 = os.path.join(args["state"]["transferDirectory"], 'mask.nii')
-    output_file2 = os.path.join(args["state"]["cacheDirectory"], 'mask.nii')
+    output_file1 = os.path.join(output_dir, 'mask.nii')
+    output_file2 = os.path.join(cache_dir, 'mask.nii')
 
     nib.save(clipped_img, output_file1)
     nib.save(clipped_img, output_file2)
 
 
 def remote_0(args):
-    """ The first function in the remote computation chain
+    """The first function in the remote computation chain
     """
     calculate_mask(args)
     input_ = args["input"]
@@ -101,17 +106,21 @@ def remote_0(args):
 
 
 def remote_1(args):
-    """ The second function in the local computation chain"""
-    site_list = args["input"].keys()
+    """ The second function in the local computation chain
+    """
+    input_ = args["input"]
+    state_ = args["state"]
+    input_dir = state_["baseDirectory"]
+    cache_dir = state_["cacheDirectory"]
+
+    site_list = input_.keys()
     user_id = list(site_list)[0]
 
-    input_list = {}
+    input_list = dict()
 
     for site in site_list:
-        file_name = os.path.join(args['state']['baseDirectory'], site,
-                                 OUTPUT_FROM_LOCAL)
-        with open(file_name, 'r') as file_h:
-            input_list[site] = json.load(file_h)
+        file_name = os.path.join(input_dir, site, OUTPUT_FROM_LOCAL)
+        input_list[site] = read_file(args, "input", file_name)
 
     X_labels = input_list[user_id]["X_labels"]
 
@@ -166,7 +175,7 @@ def remote_1(args):
 
     computation_output_dict = {"output": output_dict, "cache": cache_dict}
 
-    file_name = os.path.join(args['state']['cacheDirectory'], 'remote_cache')
+    file_name = os.path.join(cache_dir, 'remote_cache')
     with open(file_name, 'w') as file_h:
         input_list[site] = json.dump(cache_dict, file_h)
 
@@ -213,24 +222,22 @@ def remote_2(args):
                   the variable had no effect.)
 
     """
-    #    input_list = args["input"]
+    cache_ = args["cache"]
+    state_ = args["state"]
+    input_dir = state_["baseDirectory"]
 
-    input_list = {}
-
+    input_list = dict()
     site_list = args["input"].keys()
     for site in site_list:
-        file_name = os.path.join(args['state']['baseDirectory'], site,
-                                 OUTPUT_FROM_LOCAL)
+        file_name = os.path.join(input_dir, site, OUTPUT_FROM_LOCAL)
         with open(file_name, 'r') as file_h:
             input_list[site] = json.load(file_h)
 
-    file_name = os.path.join(args['state']['cacheDirectory'], 'remote_cache')
-    with open(file_name, 'r') as file_h:
-        cache_list = json.load(file_h)
+    cache_list = read_file(args, "cache", 'remote_cache')
 
     X_labels = args["cache"]["X_labels"]
 
-    all_local_stats_dicts = args["cache"]["local_stats_dict"]
+    all_local_stats_dicts = cache_["local_stats_dict"]
 
     avg_beta_vector = cache_list["avg_beta_vector"]
     dof_global = cache_list["dof_global"]

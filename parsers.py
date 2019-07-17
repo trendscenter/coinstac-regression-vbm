@@ -140,7 +140,9 @@ def parse_for_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0][:25]
+    covar_data = covar_info[0][0]
+    #    covar_data2 = covar_info[0][0][1140:1160]
+    #    covar_data = [covar_info[0][0][0], *covar_data1, *covar_data2]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
@@ -184,7 +186,7 @@ def create_dummies(data_f, cols, drop_flag=True):
     return pd.get_dummies(data_f, columns=cols, drop_first=drop_flag)
 
 
-def perform_encoding(data_f, exclude_cols=(' ')):
+def perform_encoding(args, data_f, exclude_cols=(' ')):
     """Perform encoding of various categorical variables
     """
     cols_bool = [col for col in data_f if data_f[col].dtype == bool]
@@ -227,7 +229,7 @@ def vbm_parser(args):
     covariate matrix (X) as well the dependent matrix (y) as dataframes
     """
     selected_covar, _ = parse_for_covar_info(args)
-    selected_covar = perform_encoding(selected_covar)
     covar_info, y_info = nifti_to_data(args, selected_covar)
+    encoded_covar_info = perform_encoding(args, covar_info)
 
-    return (covar_info, y_info)
+    return (encoded_covar_info, covar_info, y_info)

@@ -11,17 +11,13 @@ import ujson as json
 
 
 def write_file(spec, contents=None, location=None, file_name=None):
-    """Write contents to a file"""
-
+    """Write contents to a file
+    """
     cache_dir = spec["state"]["cacheDirectory"]
     input_dir = spec["state"]["baseDirectory"]
     output_dir = spec["state"]["transferDirectory"]
 
-    loc_dict = {
-        "cache": cache_dir,
-        "input_dir": input_dir,
-        "output": output_dir
-    }
+    loc_dict = {"cache": cache_dir, "input": input_dir, "output": output_dir}
 
     args_file = os.path.join(loc_dict[location], file_name)
 
@@ -33,17 +29,13 @@ def write_file(spec, contents=None, location=None, file_name=None):
 
 
 def read_file(spec, location, file_name):
-    """Read contents from a file"""
-
+    """Read contents from a file
+    """
     cache_dir = spec["state"]["cacheDirectory"]
     input_dir = spec["state"]["baseDirectory"]
     output_dir = spec["state"]["transferDirectory"]
 
-    loc_dict = {
-        "cache": cache_dir,
-        "input_dir": input_dir,
-        "output": output_dir
-    }
+    loc_dict = {"cache": cache_dir, "input": input_dir, "output": output_dir}
 
     args_file = os.path.join(loc_dict[location], file_name)
 
