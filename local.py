@@ -10,7 +10,7 @@ import warnings
 
 import nibabel as nib
 import numpy as np
-import pandas as pd
+#import pandas as pd
 import ujson as json
 from numba import jit
 
@@ -88,10 +88,14 @@ def local_0(args):
     categorical_dict = parse_for_categorical(args)
     average_nifti(args)
 
+    # TODO: Put these things in the UI
     threshold = 0.2
+    voxel_size = 4
+
     output_dict = {
         "categorical_dict": categorical_dict,
         "threshold": threshold,
+        "voxel_size": voxel_size,
         "avg_nifti": "avg_nifti.nii",
         "computation_phase": "local_0"
     }

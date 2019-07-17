@@ -7,16 +7,19 @@ Created on Wed Mar 21 19:25:26 2018
 """
 import os
 import warnings
+from shutil import copyfile
 
 import nibabel as nib
 import numpy as np
 import pandas as pd
+from nilearn.image import resample_to_img
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
 MASK = 'mask.nii'
+VOXEL_SIZE = 4
 
 
 def parse_for_y(args, y_files, y_labels):
@@ -101,12 +104,20 @@ def nifti_to_data(args, X):
 
     appended_data = []
 
-    # Extract Data (after applying mask)
+    mni_image = nib.load(
+        os.path.join('/computation', 'MNI152_T1_4mm_brain.nii'))
+
     for image in X.index:
+        input_file = os.path.join(args["state"]["baseDirectory"], image)
+        output_file = os.path.join(args["state"]["cacheDirectory"], image)
         try:
-            image_data = np.array(
-                nib.load(os.path.join(args["state"]["baseDirectory"],
-                                      image)).dataobj)
+            if nib.load(input_file).header.get_zooms()[0] == VOXEL_SIZE:
+                copyfile(input_file, output_file)
+            else:
+                clipped_img = resample_to_img(input_file, mni_image)
+                nib.save(clipped_img, output_file)
+
+            image_data = nib.load(output_file).get_data()
             if np.all(np.isnan(image_data)) or np.count_nonzero(
                     image_data) == 0 or image_data.size == 0:
                 X.drop(index=image, inplace=True)
@@ -129,7 +140,7 @@ def parse_for_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0]
+    covar_data = covar_info[0][0][:25]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 

@@ -11,7 +11,6 @@ import os
 import nibabel as nib
 import numpy as np
 import pandas as pd
-
 from nilearn import plotting
 
 np.seterr(divide='ignore')

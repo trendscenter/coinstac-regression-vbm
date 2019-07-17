@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import ujson as json
+from nilearn.image import resample_to_img
 
 import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals
@@ -57,6 +58,15 @@ def calculate_mask(args):
     affine = principal_image.affine
 
     clipped_img = nib.Nifti1Image(mask_info, affine, header)
+
+    # Resampling (check with Eswar)
+    voxel_size = input_[user_id]["voxel_size"]
+    file = 'MNI152_T1_' + str(voxel_size) + 'mm_brain.nii'
+    mni_image = nib.load(os.path.join('/computation', file))
+    clipped_img = resample_to_img(clipped_img,
+                                  mni_image,
+                                  interpolation='nearest')
+
     output_file1 = os.path.join(args["state"]["transferDirectory"], 'mask.nii')
     output_file2 = os.path.join(args["state"]["cacheDirectory"], 'mask.nii')
 
