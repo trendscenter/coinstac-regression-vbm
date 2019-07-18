@@ -105,7 +105,7 @@ def nifti_to_data(args, X):
     appended_data = []
 
     mni_image = nib.load(
-        os.path.join('/computation',
+            os.path.join('/computation/templates',
                      'MNI152_T1_' + str(voxel_size) + 'mm_brain.nii'))
 
     for image in X.index:

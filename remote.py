@@ -19,7 +19,7 @@ import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals
 from rw_utils import read_file
 
-warnings.filter("ignore")
+warnings.simplefilter("ignore")
 
 OUTPUT_FROM_LOCAL = 'local_output'
 
@@ -68,7 +68,7 @@ def calculate_mask(args):
     # TODO: Resampling (check with Eswar)
     voxel_size = input_[user_id]["voxel_size"]
     file = 'MNI152_T1_' + str(voxel_size) + 'mm_brain.nii'
-    mni_image = os.path.join('/computation', file)
+    mni_image = os.path.join('/computation/templates', file)
     # I don't like these above 3 lines of code
 
     clipped_img = resample_to_img(clipped_img,
