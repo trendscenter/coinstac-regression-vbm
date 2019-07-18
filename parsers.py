@@ -102,12 +102,9 @@ def nifti_to_data(args, X):
     except FileNotFoundError:
         raise Exception("Missing Mask at " + args["state"]["clientId"])
 
+    mni_image = os.path.join(args["state"]["baseDirectory"],
+                             'mni_downsampled.nii')
     appended_data = []
-
-    mni_image = nib.load(
-            os.path.join('/computation/templates',
-                     'MNI152_T1_' + str(voxel_size) + 'mm_brain.nii'))
-
     for image in X.index:
         input_file = os.path.join(args["state"]["baseDirectory"], image)
         output_file = os.path.join(args["state"]["cacheDirectory"], image)
