@@ -1,5 +1,4 @@
 matplotlib==3.0.3
-memory_profiler
 nilearn==0.4.2
 numba==0.43.1
 numpy==1.15.4

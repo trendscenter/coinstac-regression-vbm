@@ -6,6 +6,7 @@ regression with decentralized statistic calculation
 """
 import os
 import sys
+import warnings
 
 import nibabel as nib
 import numpy as np
@@ -17,6 +18,8 @@ from nilearn.image import resample_to_img
 import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals
 from rw_utils import read_file
+
+warnings.filter("ignore")
 
 OUTPUT_FROM_LOCAL = 'local_output'
 
