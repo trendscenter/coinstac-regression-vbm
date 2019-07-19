@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import ujson as json
-from nilearn.image import resample_to_img
+from nilearn.image import resample_to_img, resample_img
 
 import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals
@@ -22,6 +22,7 @@ from rw_utils import read_file
 warnings.simplefilter("ignore")
 
 OUTPUT_FROM_LOCAL = 'local_output'
+MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
 
 
 def return_uniques_and_counts(df):
@@ -55,6 +56,7 @@ def calculate_mask(args):
     # Threshold binarizer
     user_id = list(input_)[0]
     threshold = input_[user_id]["threshold"]
+    voxel_size = input_[user_id]["voxel_size"]
 
     mask_info = avg_of_all > threshold
 
@@ -64,22 +66,32 @@ def calculate_mask(args):
     affine = principal_image.affine
 
     clipped_img = nib.Nifti1Image(mask_info, affine, header)
+    mni_image = os.path.join('/computation/templates', MNI_TEMPLATE)
 
-    # TODO: Resampling (check with Eswar)
-    voxel_size = input_[user_id]["voxel_size"]
-    file = 'MNI152_T1_' + str(voxel_size) + 'mm_brain.nii'
-    mni_image = os.path.join('/computation/templates', file)
-    # I don't like these above 3 lines of code
+    reoriented_mni = resample_to_img(mni_image,
+                                     clipped_img,
+                                     interpolation='linear')
+    downsampled_mni = resample_img(reoriented_mni,
+                                   target_affine=np.eye(3) * voxel_size,
+                                   interpolation='linear')
 
-    clipped_img = resample_to_img(clipped_img,
-                                  mni_image,
-                                  interpolation='nearest')
+    downsampled_mask = resample_to_img(clipped_img,
+                                       downsampled_mni,
+                                       interpolation='nearest')
+
+    #    downsampled_mask = resample_img(clipped_img,
+    #                                    target_affine=np.eye(3) * voxel_size,
+    #                                    interpolation='nearest')
 
     output_file1 = os.path.join(output_dir, 'mask.nii')
     output_file2 = os.path.join(cache_dir, 'mask.nii')
+    output_file3 = os.path.join(output_dir, 'mni_downsampled.nii')
+    output_file4 = os.path.join(cache_dir, 'mni_downsampled.nii')
 
-    nib.save(clipped_img, output_file1)
-    nib.save(clipped_img, output_file2)
+    nib.save(downsampled_mask, output_file1)
+    nib.save(downsampled_mask, output_file2)
+    nib.save(downsampled_mni, output_file3)
+    nib.save(downsampled_mni, output_file4)
 
 
 def remote_0(args):
