@@ -116,11 +116,15 @@ def local_1(args):
 
     # Local Statistics
     encoded_X, X, y = vbm_parser(original_args)
+#    if args["state"]["clientId"] == 'local0':
+#        raise Exception(X, encoded_X)
     meanY_vector, lenY_vector = mean_and_len_y(y)
     _, local_stats_list = local_stats_to_dict_numba(args, encoded_X, y)
 
     # Global Statistics
     augmented_X = add_site_covariates(args, original_args, X)
+#    if args["state"]["clientId"] == 'local0':
+#        raise Exception(augmented_X.columns)
     X_labels = list(augmented_X.columns)
     biased_X = augmented_X.values.astype('float64')
 

@@ -138,7 +138,7 @@ def parse_for_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0]
+    covar_data = covar_info[0][0][:15]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
@@ -191,30 +191,21 @@ def perform_encoding(args, data_f, exclude_cols=(' ')):
     """Perform encoding of various categorical variables
     """
     cols_categorical = [col for col in data_f if data_f[col].dtype == object]
-    cols_mono = [col for col in data_f.columns if data_f[col].nunique() == 1]
+    cols_mono = [col for col in data_f if data_f[col].nunique() == 1]
 
     for word in cols_mono:
         if word.startswith(exclude_cols):
             cols_mono.remove(word)
 
+    data_f = data_f.drop(columns=cols_mono)
+
+    # https://bassi.li/blog/2019/07/15/set-function-vs-set-syntax-in-python-3.html
+    nodrop_cols = {*cols_categorical} - {*cols_mono}
+
     # Working with "string"/object type covariates
-    cols_polychot = [
-        col for col in cols_categorical if data_f[col].nunique() > 2
-    ]
+    data_f = create_dummies(data_f, nodrop_cols, False)
 
-    cols_dichot = [
-        col for col in cols_categorical if data_f[col].nunique() == 2
-    ]
-
-    # One-hot encoding (polychotomous variables)
-    data_f = create_dummies(data_f, cols_polychot, False)
-
-    # Binary encoding (dichotomous variables)
-    data_f = create_dummies(data_f, cols_dichot, True)
-
-    data_f.drop(columns=cols_mono, inplace=True)
-    data_f.dropna(axis=0, how='any', inplace=True)
-    data_f = sm.add_constant(data_f, has_constant='add')
+    data_f = data_f.dropna(axis=0, how='any')
 
     return data_f
 

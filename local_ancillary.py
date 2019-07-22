@@ -72,8 +72,7 @@ def gather_local_stats(X, y):
 def local_stats_to_dict_numba(args, X, y):
     """Wrap local statistics into a dictionary to be sent to the remote
     """
-    X1 = sm.add_constant(X)
-
+    X1 = X
     X_labels = list(X1.columns)
 
     X1 = X1.values.astype('float64')
@@ -159,7 +158,7 @@ def add_site_covariates(args, original_args, X):
         elif val == 2:
             covar_dict = pd.get_dummies(all_sites[key],
                                         prefix=key,
-                                        drop_first=True)
+                                        drop_first=False)
             X = merging_globals(args, X, covar_dict, all_sites, key)
 
         else:
@@ -168,7 +167,6 @@ def add_site_covariates(args, original_args, X):
                                         drop_first=False)
             X = merging_globals(args, X, covar_dict, all_sites, key)
 
-    X.dropna(axis=0, how='any', inplace=True)
-    biased_X = sm.add_constant(X, has_constant='add')
+    biased_X = X.dropna(axis=0, how='any')
 
     return biased_X
