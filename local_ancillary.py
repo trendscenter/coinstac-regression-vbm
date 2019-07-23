@@ -98,7 +98,7 @@ def local_stats_to_dict(X, y):
     """
     y_labels = list(y.columns)
 
-    biased_X = sm.add_constant(X)
+    biased_X = X
 
     local_params = []
     local_sse = []
@@ -156,16 +156,10 @@ def add_site_covariates(args, original_args, X):
     for key, val in glob_uniq_ct.items():
         if val == 1:
             X.drop(columns=key, inplace=True)
-        elif val == 2:
-            covar_dict = pd.get_dummies(all_sites[key],
-                                        prefix=key,
-                                        drop_first=True)
-            X = merging_globals(args, X, covar_dict, all_sites, key)
-
         else:
             covar_dict = pd.get_dummies(all_sites[key],
                                         prefix=key,
-                                        drop_first=False)
+                                        drop_first=True)
             X = merging_globals(args, X, covar_dict, all_sites, key)
 
     X.dropna(axis=0, how='any', inplace=True)
