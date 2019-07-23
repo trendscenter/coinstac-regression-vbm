@@ -7,7 +7,6 @@ Created on Wed Mar 21 19:25:26 2018
 """
 import os
 import warnings
-from shutil import copyfile
 
 import nibabel as nib
 import numpy as np
@@ -107,15 +106,13 @@ def nifti_to_data(args, X):
     appended_data = []
     for image in X.index:
         input_file = os.path.join(args["state"]["baseDirectory"], image)
-        output_file = os.path.join(args["state"]["cacheDirectory"], image)
         try:
             if nib.load(input_file).header.get_zooms()[0] == voxel_size:
-                copyfile(input_file, output_file)
+                image_data = nib.load(input_file).get_data()
             else:
                 clipped_img = resample_to_img(input_file, mni_image)
-                nib.save(clipped_img, output_file)
+                image_data = clipped_img.get_data()
 
-            image_data = nib.load(output_file).get_data()
             if np.all(np.isnan(image_data)) or np.count_nonzero(
                     image_data) == 0 or image_data.size == 0:
                 X.drop(index=image, inplace=True)
@@ -173,10 +170,10 @@ def parse_for_categorical(args):
     """
     X, _ = parse_for_covar_info(args)
 
-    site_dict1 = dict()
-    for col in X:
-        if X[col].dtype == object:
-            site_dict1[col] = list(X[col].unique())
+    site_dict1 = {
+        col: list(X[col].unique())
+        for col in X.select_dtypes(include=object)
+    }
 
     return site_dict1
 
@@ -191,29 +188,16 @@ def perform_encoding(args, data_f, exclude_cols=(' ')):
     """Perform encoding of various categorical variables
     """
     cols_categorical = [col for col in data_f if data_f[col].dtype == object]
-    cols_mono = [col for col in data_f.columns if data_f[col].nunique() == 1]
+    cols_mono = [col for col in data_f if data_f[col].nunique() == 1]
 
-    for word in cols_mono:
-        if word.startswith(exclude_cols):
-            cols_mono.remove(word)
+    # Dropping columsn with unique values
+    data_f = data_f.drop(columns=cols_mono)
 
-    # Working with "string"/object type covariates
-    cols_polychot = [
-        col for col in cols_categorical if data_f[col].nunique() > 2
-    ]
+    # Creating dummies on non-unique categorical variables
+    cols_nodrop = set(cols_categorical) - set(cols_mono)
+    data_f = create_dummies(data_f, cols_nodrop, True)
 
-    cols_dichot = [
-        col for col in cols_categorical if data_f[col].nunique() == 2
-    ]
-
-    # One-hot encoding (polychotomous variables)
-    data_f = create_dummies(data_f, cols_polychot, False)
-
-    # Binary encoding (dichotomous variables)
-    data_f = create_dummies(data_f, cols_dichot, True)
-
-    data_f.drop(columns=cols_mono, inplace=True)
-    data_f.dropna(axis=0, how='any', inplace=True)
+    data_f = data_f.dropna(axis=0, how='any')
     data_f = sm.add_constant(data_f, has_constant='add')
 
     return data_f

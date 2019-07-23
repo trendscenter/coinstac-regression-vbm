@@ -141,7 +141,7 @@ def merging_globals(args, X, site_covar_dict, dict_, key):
     site_covar_dict.index.name = key
     site_covar_dict.reset_index(level=0, inplace=True)
     X = X.merge(site_covar_dict, left_on=key, right_on=key)
-    X.drop(columns=key, inplace=True)
+    X = X.drop(columns=key)
 
     return X
 
