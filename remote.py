@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import ujson as json
-from nilearn.image import resample_to_img, resample_img
+from nilearn.image import resample_img, resample_to_img
 
 import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals

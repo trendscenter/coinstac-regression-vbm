@@ -83,7 +83,6 @@ def local_0(args):
     categorical_dict = parse_for_categorical(args)
     average_nifti(args)
 
-    # TODO: Put these things in the UI
     threshold = args["input"]["threshold"]
     voxel_size = args["input"]["voxel_size"]
 
