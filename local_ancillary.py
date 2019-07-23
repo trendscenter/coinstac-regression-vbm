@@ -98,7 +98,7 @@ def local_stats_to_dict(X, y):
     """
     y_labels = list(y.columns)
 
-    biased_X = sm.add_constant(X)
+    biased_X = X
 
     local_params = []
     local_sse = []
