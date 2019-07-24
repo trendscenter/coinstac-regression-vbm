@@ -123,6 +123,7 @@ def nifti_to_data(args, X):
             continue
 
     y = np.vstack(appended_data)
+    y = y.astype('float64')
 
     return X, y
 

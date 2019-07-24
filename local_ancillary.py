@@ -5,7 +5,6 @@ Created on Wed Apr 11 22:28:11 2018
 
 @author: Harshvardhan
 """
-import os
 import warnings
 
 import numpy as np
@@ -18,8 +17,6 @@ from ancillary import encode_png, print_beta_images, print_pvals
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
-
-MASK = os.path.join('/computation', 'mask_2mm.nii')
 
 
 def mean_and_len_y(y):
@@ -72,14 +69,11 @@ def gather_local_stats(X, y):
 def local_stats_to_dict_numba(args, X, y):
     """Wrap local statistics into a dictionary to be sent to the remote
     """
-    X1 = sm.add_constant(X)
+    X_labels = list(X.columns)
 
-    X_labels = list(X1.columns)
+    X1 = X.values.astype('float64')
 
-    X1 = X1.values.astype('float64')
-    y1 = y.astype('float64')
-
-    params, _, tvalues, _, dof_global = gather_local_stats(X1, y1)
+    params, _, tvalues, _, dof_global = gather_local_stats(X1, y)
 
     pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
 

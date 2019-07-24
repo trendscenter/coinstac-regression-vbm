@@ -10,6 +10,7 @@ import warnings
 
 import nibabel as nib
 import numpy as np
+import pandas as pd
 import ujson as json
 from numba import jit
 
@@ -33,7 +34,6 @@ def calc_Xtransposey_local(biased_X, y):
     """Calculates X.T * y
     """
     biased_X = biased_X.astype('float64')
-    y = y.astype('float64')
 
     @jit(nopython=True)
     def mult(a, b):
@@ -193,8 +193,6 @@ def local_2(args):
 
     avg_beta_vector = input_["avg_beta_vector"]
     mean_y_global = input_["mean_y_global"]
-
-    y = y.astype('float64')
 
     SSE_local, SST_local = [], []
     for voxel in range(y.shape[1]):
