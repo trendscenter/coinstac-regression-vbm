@@ -11,7 +11,7 @@ import warnings
 import nibabel as nib
 import numpy as np
 import pandas as pd
-import scipy as sp
+#import scipy as sp
 import ujson as json
 from nilearn.image import resample_img, resample_to_img
 
@@ -159,7 +159,7 @@ def remote_1(args):
 
     avg_beta_vector = np.matrix.transpose(
         sum([
-            np.matmul(sp.linalg.inv(beta_vector_1),
+            np.matmul(np.linalg.inv(beta_vector_1),
                       input_list[site]["Xtransposey_local"])
             for site in input_list
         ]))
@@ -272,7 +272,7 @@ def remote_2(args):
     ps_global = []
 
     for i, _ in enumerate(MSE):
-        var_covar_beta_global = MSE[i] * sp.linalg.inv(varX_matrix_global)
+        var_covar_beta_global = MSE[i] * np.linalg.inv(varX_matrix_global)
         se_beta_global = np.sqrt(var_covar_beta_global.diagonal())
         ts = (avg_beta_vector[i] / se_beta_global).tolist()
         ps = reg.t_to_p(ts, dof_global[i])
