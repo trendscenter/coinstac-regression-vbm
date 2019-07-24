@@ -23,24 +23,27 @@ warnings.simplefilter("ignore")
 
 
 @jit(nopython=True)
-def calc_XtransposeX_local(biased_X):
-    """Calculates X.T * X
-    """
-    return biased_X.T @ biased_X
+def multiply(a, b):
+    """Multiplies two matrices"""
+    return a.T @ b
 
 
-def calc_Xtransposey_local(biased_X, y):
-    """Calculates X.T * y
-    """
-    biased_X = biased_X.astype('float64')
-    y = y.astype('float64')
+@jit(nopython=True)
+def stats_calculation(X, y, avg_beta_vec, mean_y_global):
+    size_y = y.shape[1]
+    sse_local = np.zeros(size_y)
+    sst_local = np.zeros(size_y)
 
-    @jit(nopython=True)
-    def mult(a, b):
-        """Multiplies two matrices"""
-        return a @ b
+    for voxel in range(y.shape[1]):
+        y1 = y[:, voxel]
+        beta = avg_beta_vec[voxel]
+        mean_y = mean_y_global[voxel]
 
-    return mult(biased_X.T, y)
+        y1_estimate = np.dot(beta, X.T)
+        sse_local[voxel] = np.linalg.norm(y1 - y1_estimate)**2
+        sst_local[voxel] = np.sum(np.square(y1 - mean_y))
+
+    return sse_local, sst_local
 
 
 def average_nifti(args):
@@ -123,11 +126,8 @@ def local_1(args):
     X_labels = list(augmented_X.columns)
     biased_X = augmented_X.values.astype('float64')
 
-    #    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
-    #    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
-
-    XtransposeX_local = calc_XtransposeX_local(biased_X)
-    Xtransposey_local = calc_Xtransposey_local(biased_X, y)
+    XtransposeX_local = multiply(biased_X, biased_X)
+    Xtransposey_local = multiply(biased_X, y)
 
     # Writing covariates and dependents to cache as files
     np.save(os.path.join(cache_, 'X.npy'), biased_X)
@@ -194,21 +194,15 @@ def local_2(args):
     avg_beta_vector = input_["avg_beta_vector"]
     mean_y_global = input_["mean_y_global"]
 
-    y = y.astype('float64')
+    varX_matrix_local = multiply(biased_X, biased_X)
 
-    SSE_local, SST_local = [], []
-    for voxel in range(y.shape[1]):
-        curr_y = y[:, voxel]
-        SSE_local.append(
-            reg.sum_squared_error(biased_X, curr_y, avg_beta_vector[voxel]))
-        SST_local.append(
-            np.sum(np.square(np.subtract(curr_y, mean_y_global[voxel]))))
-
-    varX_matrix_local = np.dot(biased_X.T, biased_X)
+    SSE_local, SST_local = stats_calculation(biased_X, y,
+                                             np.array(avg_beta_vector),
+                                             np.array(mean_y_global))
 
     output_dict = {
-        "SSE_local": SSE_local,
-        "SST_local": SST_local,
+        "SSE_local": SSE_local.tolist(),
+        "SST_local": SST_local.tolist(),
         "varX_matrix_local": varX_matrix_local.tolist()
     }
 
