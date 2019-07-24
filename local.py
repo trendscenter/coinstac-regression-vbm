@@ -10,7 +10,6 @@ import warnings
 
 import nibabel as nib
 import numpy as np
-import pandas as pd
 import ujson as json
 from numba import jit
 
@@ -24,23 +23,9 @@ warnings.simplefilter("ignore")
 
 
 @jit(nopython=True)
-def calc_XtransposeX_local(biased_X):
-    """Calculates X.T * X
-    """
-    return biased_X.T @ biased_X
-
-
-def calc_Xtransposey_local(biased_X, y):
-    """Calculates X.T * y
-    """
-    biased_X = biased_X.astype('float64')
-
-    @jit(nopython=True)
-    def mult(a, b):
-        """Multiplies two matrices"""
-        return a @ b
-
-    return mult(biased_X.T, y)
+def multiply(a, b):
+    """Multiplies two matrices"""
+    return a.T @ b
 
 
 def average_nifti(args):
@@ -126,8 +111,8 @@ def local_1(args):
     #    XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
     #    Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), y)
 
-    XtransposeX_local = calc_XtransposeX_local(biased_X)
-    Xtransposey_local = calc_Xtransposey_local(biased_X, y)
+    XtransposeX_local = multiply(biased_X, biased_X)
+    Xtransposey_local = multiply(biased_X, y)
 
     # Writing covariates and dependents to cache as files
     np.save(os.path.join(cache_, 'X.npy'), biased_X)
