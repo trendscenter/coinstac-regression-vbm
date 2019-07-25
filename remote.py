@@ -76,22 +76,21 @@ def remote_1(args):
         np.array(input_list[site]["XtransposeX_local"]) for site in input_list
     ]
 
-    beta_vector_1 = sum(beta_vector_0)
+    beta_vector_0 = sum(beta_vector_0)
+
+    beta_vector_1 = [
+        np.array(input_list[site]["Xtransposey_local"]) for site in input_list
+    ]
+
+    beta_vector_1 = sum(beta_vector_1)
 
     all_lambdas = [input_list[site]["lambda"] for site in input_list]
 
     if np.unique(all_lambdas).shape[0] != 1:
         raise Exception("Unequal lambdas at local sites")
 
-    beta_vector_1 = beta_vector_1 + np.unique(all_lambdas) * np.eye(
-        beta_vector_1.shape[0])
-
-    avg_beta_vector = np.matrix.transpose(
-        sum([
-            np.matmul(np.linalg.inv(beta_vector_1),
-                      input_list[site]["Xtransposey_local"])
-            for site in input_list
-        ]))
+    avg_beta_vector = np.transpose(
+        np.dot(np.linalg.inv(beta_vector_0), beta_vector_1))
 
     mean_y_local = [input_list[site]["mean_y_local"] for site in input_list]
     count_y_local = [
