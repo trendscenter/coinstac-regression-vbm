@@ -11,7 +11,7 @@ import nibabel as nib
 import numpy as np
 from nilearn.image import resample_img, resample_to_img
 
-from parsers import parse_for_covar_info
+from parsers import parse_covar_info
 
 MASK = 'mask.nii'
 MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
@@ -62,7 +62,7 @@ def average_nifti(args):
     input_dir = state_["baseDirectory"]
     output_dir = state_["transferDirectory"]
 
-    covar_x, _ = parse_for_covar_info(args)
+    covar_x, _ = parse_covar_info(args)
 
     appended_data = 0
     for image in covar_x.index:

@@ -85,7 +85,7 @@ def fsl_parser(args):
     return (X, y)
 
 
-def parse_for_covar_info(args):
+def parse_covar_info(args):
     """Read covariate information from the UI
     """
     input_ = args["input"]
@@ -93,7 +93,7 @@ def parse_for_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0][:25]
+    covar_data = covar_info[0][0]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
@@ -126,7 +126,7 @@ def parse_for_covar_info(args):
 def parse_for_categorical(args):
     """Return unique subsites as a dictionary
     """
-    X, _ = parse_for_covar_info(args)
+    X, _ = parse_covar_info(args)
 
     site_dict1 = {
         col: list(X[col].unique())
