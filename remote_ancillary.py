@@ -30,3 +30,15 @@ def extract_sites(site_dict):
                 yield found
         else:
             yield site
+
+
+def return_uniques_and_counts(df):
+    """Return unique-values of the categorical variables and their counts
+    """
+    keys, count = dict(), dict()
+    for index, row in df.iterrows():
+        flat_list = [item for sublist in row for item in sublist]
+        keys[index] = set(flat_list)
+        count[index] = len(set(flat_list))
+
+    return keys, count
