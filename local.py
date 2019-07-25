@@ -8,76 +8,18 @@ import os
 import sys
 import warnings
 
-import nibabel as nib
 import numpy as np
 import ujson as json
-from numba import jit
 
-import regression as reg
 from local_ancillary import (add_site_covariates, local_stats_to_dict_numba,
-                             mean_and_len_y)
-from parsers import parse_for_categorical, parse_for_covar_info, vbm_parser
+                             mean_and_len_y, multiply, stats_calculation,
+                             vbm_parser)
+from nipype_utils import average_nifti
+from parsers import parse_for_categorical
 from rw_utils import read_file, write_file
+from utils import list_recursive
 
 warnings.simplefilter("ignore")
-
-
-@jit(nopython=True)
-def multiply(a, b):
-    """Multiplies two matrices"""
-    return a.T @ b
-
-
-@jit(nopython=True)
-def stats_calculation(X, y, avg_beta_vec, mean_y_global):
-    size_y = y.shape[1]
-    sse_local = np.zeros(size_y)
-    sst_local = np.zeros(size_y)
-
-    for voxel in range(y.shape[1]):
-        y1 = y[:, voxel]
-        beta = avg_beta_vec[voxel]
-        mean_y = mean_y_global[voxel]
-
-        y1_estimate = np.dot(beta, X.T)
-        sse_local[voxel] = np.linalg.norm(y1 - y1_estimate)**2
-        sst_local[voxel] = np.sum(np.square(y1 - mean_y))
-
-    return sse_local, sst_local
-
-
-def average_nifti(args):
-    """Reads in all the nifti images and calculates their average
-    """
-    state_ = args["state"]
-    input_dir = state_["baseDirectory"]
-    output_dir = state_["transferDirectory"]
-
-    covar_x, _ = parse_for_covar_info(args)
-
-    appended_data = 0
-    for image in covar_x.index:
-        try:
-            image_data = nib.load(os.path.join(input_dir, image)).get_fdata()
-            if np.all(np.isnan(image_data)) or np.count_nonzero(
-                    image_data) == 0 or image_data.size == 0:
-                covar_x.drop(index=image, inplace=True)
-                continue
-            else:
-                appended_data += image_data
-        except FileNotFoundError:
-            covar_x.drop(index=image, inplace=True)
-            continue
-
-    sample_image = nib.load(os.path.join(input_dir, covar_x.index[0]))
-    header = sample_image.header
-    affine = sample_image.affine
-
-    avg_nifti = appended_data / len(covar_x.index)
-
-    clipped_img = nib.Nifti1Image(avg_nifti, affine, header)
-    output_file = os.path.join(output_dir, 'avg_nifti.nii')
-    nib.save(clipped_img, output_file)
 
 
 def local_0(args):
@@ -196,13 +138,13 @@ def local_2(args):
 
     varX_matrix_local = multiply(biased_X, biased_X)
 
-    SSE_local, SST_local = stats_calculation(biased_X, y,
+    sse_local, sst_local = stats_calculation(biased_X, y,
                                              np.array(avg_beta_vector),
                                              np.array(mean_y_global))
 
     output_dict = {
-        "SSE_local": SSE_local.tolist(),
-        "SST_local": SST_local.tolist(),
+        "SSE_local": sse_local.tolist(),
+        "SST_local": sst_local.tolist(),
         "varX_matrix_local": varX_matrix_local.tolist()
     }
 
@@ -218,7 +160,7 @@ def local_2(args):
 if __name__ == '__main__':
 
     PARSED_ARGS = json.loads(sys.stdin.read())
-    PHASE_KEY = list(reg.list_recursive(PARSED_ARGS, 'computation_phase'))
+    PHASE_KEY = list(list_recursive(PARSED_ARGS, 'computation_phase'))
 
     if not PHASE_KEY:
         sys.stdout.write(local_0(PARSED_ARGS))

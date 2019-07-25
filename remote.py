@@ -8,90 +8,19 @@ import os
 import sys
 import warnings
 
-import nibabel as nib
 import numpy as np
 import pandas as pd
-#import scipy as sp
 import ujson as json
-from nilearn.image import resample_img, resample_to_img
 
 import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals
+from nipype_utils import calculate_mask
+from remote_ancillary import return_uniques_and_counts
 from rw_utils import read_file
+from utils import list_recursive
 
 warnings.simplefilter("ignore")
-
 OUTPUT_FROM_LOCAL = 'local_output'
-MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
-
-
-def return_uniques_and_counts(df):
-    """Return unique-values of the categorical variables and their counts
-    """
-    keys, count = dict(), dict()
-    for index, row in df.iterrows():
-        flat_list = [item for sublist in row for item in sublist]
-        keys[index] = set(flat_list)
-        count[index] = len(set(flat_list))
-
-    return keys, count
-
-
-def calculate_mask(args):
-    """Calculates the average of all masks
-    """
-    input_ = args["input"]
-    state_ = args["state"]
-    input_dir = state_["baseDirectory"]
-    cache_dir = state_["cacheDirectory"]
-    output_dir = state_["transferDirectory"]
-
-    site_ids = input_.keys()
-    avg_of_all = sum([
-        nib.load(os.path.join(input_dir, site,
-                              input_[site]['avg_nifti'])).get_fdata()
-        for site in input_
-    ]) / len(site_ids)
-
-    # Threshold binarizer
-    user_id = list(input_)[0]
-    threshold = input_[user_id]["threshold"]
-    voxel_size = input_[user_id]["voxel_size"]
-
-    mask_info = avg_of_all > threshold
-
-    principal_image = nib.load(
-        os.path.join(input_dir, user_id, input_[user_id]['avg_nifti']))
-    header = principal_image.header
-    affine = principal_image.affine
-
-    clipped_img = nib.Nifti1Image(mask_info, affine, header)
-    mni_image = os.path.join('/computation/templates', MNI_TEMPLATE)
-
-    reoriented_mni = resample_to_img(mni_image,
-                                     clipped_img,
-                                     interpolation='linear')
-    downsampled_mni = resample_img(reoriented_mni,
-                                   target_affine=np.eye(3) * voxel_size,
-                                   interpolation='linear')
-
-    downsampled_mask = resample_to_img(clipped_img,
-                                       downsampled_mni,
-                                       interpolation='nearest')
-
-    #    downsampled_mask = resample_img(clipped_img,
-    #                                    target_affine=np.eye(3) * voxel_size,
-    #                                    interpolation='nearest')
-
-    output_file1 = os.path.join(output_dir, 'mask.nii')
-    output_file2 = os.path.join(cache_dir, 'mask.nii')
-    output_file3 = os.path.join(output_dir, 'mni_downsampled.nii')
-    output_file4 = os.path.join(cache_dir, 'mni_downsampled.nii')
-
-    nib.save(downsampled_mask, output_file1)
-    nib.save(downsampled_mask, output_file2)
-    nib.save(downsampled_mni, output_file3)
-    nib.save(downsampled_mni, output_file4)
 
 
 def remote_0(args):
@@ -302,7 +231,7 @@ def remote_2(args):
 if __name__ == '__main__':
 
     PARSED_ARGS = json.loads(sys.stdin.read())
-    PHASE_KEY = list(reg.list_recursive(PARSED_ARGS, 'computation_phase'))
+    PHASE_KEY = list(list_recursive(PARSED_ARGS, 'computation_phase'))
 
     if "local_0" in PHASE_KEY:
         sys.stdout.write(remote_0(PARSED_ARGS))

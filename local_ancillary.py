@@ -13,6 +13,8 @@ import scipy as sp
 from numba import jit, prange
 
 from ancillary import encode_png, print_beta_images, print_pvals
+from nipype_utils import nifti_to_data
+from parsers import parse_for_covar_info, perform_encoding
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -160,3 +162,39 @@ def add_site_covariates(args, original_args, X):
     biased_X = sm.add_constant(X, has_constant='add')
 
     return biased_X
+
+
+@jit(nopython=True)
+def multiply(array_a, array_b):
+    """Multiplies two matrices"""
+    return array_a.T @ array_b
+
+
+@jit(nopython=True)
+def stats_calculation(X, y, avg_beta_vec, mean_y_global):
+    """Calculate SSE and SST."""
+    size_y = y.shape[1]
+    sse_local = np.zeros(size_y)
+    sst_local = np.zeros(size_y)
+
+    for voxel in range(y.shape[1]):
+        y1 = y[:, voxel]
+        beta = avg_beta_vec[voxel]
+        mean_y = mean_y_global[voxel]
+
+        y1_estimate = np.dot(beta, X.T)
+        sse_local[voxel] = np.linalg.norm(y1 - y1_estimate)**2
+        sst_local[voxel] = np.sum(np.square(y1 - mean_y))
+
+    return sse_local, sst_local
+
+
+def vbm_parser(args):
+    """Parse the nifti (.nii) specific inputspec.json and return the
+    covariate matrix (X) as well the dependent matrix (y) as dataframes
+    """
+    selected_covar, _ = parse_for_covar_info(args)
+    covar_info, y_info = nifti_to_data(args, selected_covar)
+    encoded_covar_info = perform_encoding(args, covar_info)
+
+    return (encoded_covar_info, covar_info, y_info)

@@ -8,16 +8,11 @@ Created on Wed Mar 21 19:25:26 2018
 import os
 import warnings
 
-import nibabel as nib
-import numpy as np
 import pandas as pd
-from nilearn.image import resample_to_img
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
-
-MASK = 'mask.nii'
 
 
 def parse_for_y(args, y_files, y_labels):
@@ -90,44 +85,6 @@ def fsl_parser(args):
     return (X, y)
 
 
-# TODO: Check if I can do away with the try and except block
-def nifti_to_data(args, X):
-    """Read nifti files as matrices
-    """
-    voxel_size = args["input"]["voxel_size"]
-    try:
-        mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
-                                          MASK)).get_fdata()
-    except FileNotFoundError:
-        raise Exception("Missing Mask at " + args["state"]["clientId"])
-
-    mni_image = os.path.join(args["state"]["baseDirectory"],
-                             'mni_downsampled.nii')
-    appended_data = []
-    for image in X.index:
-        input_file = os.path.join(args["state"]["baseDirectory"], image)
-        try:
-            if nib.load(input_file).header.get_zooms()[0] == voxel_size:
-                image_data = nib.load(input_file).get_data()
-            else:
-                clipped_img = resample_to_img(input_file, mni_image)
-                image_data = clipped_img.get_data()
-
-            if np.all(np.isnan(image_data)) or np.count_nonzero(
-                    image_data) == 0 or image_data.size == 0:
-                X.drop(index=image, inplace=True)
-                continue
-            else:
-                appended_data.append(image_data[mask_data > 0])
-        except FileNotFoundError:
-            continue
-
-    y = np.vstack(appended_data)
-    y = y.astype('float64')
-
-    return X, y
-
-
 def parse_for_covar_info(args):
     """Read covariate information from the UI
     """
@@ -136,7 +93,7 @@ def parse_for_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0]
+    covar_data = covar_info[0][0][:25]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
@@ -202,14 +159,3 @@ def perform_encoding(args, data_f, exclude_cols=(' ')):
     data_f = sm.add_constant(data_f, has_constant='add')
 
     return data_f
-
-
-def vbm_parser(args):
-    """Parse the nifti (.nii) specific inputspec.json and return the
-    covariate matrix (X) as well the dependent matrix (y) as dataframes
-    """
-    selected_covar, _ = parse_for_covar_info(args)
-    covar_info, y_info = nifti_to_data(args, selected_covar)
-    encoded_covar_info = perform_encoding(args, covar_info)
-
-    return (encoded_covar_info, covar_info, y_info)
