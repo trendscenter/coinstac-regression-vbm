@@ -5,4 +5,5 @@ test/output
 test/remote
 test/transfer
 test/cache
-
+**/mask.nii
+**/mni_downsampled.nii
