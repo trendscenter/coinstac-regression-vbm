@@ -17,7 +17,6 @@ MASK = 'mask.nii'
 MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
 
 
-# TODO: Check if I can do away with the try and except block
 def nifti_to_data(args, X):
     """Read nifti files as matrices
     """
@@ -33,21 +32,17 @@ def nifti_to_data(args, X):
     appended_data = []
     for image in X.index:
         input_file = os.path.join(args["state"]["baseDirectory"], image)
-        try:
-            if nib.load(input_file).header.get_zooms()[0] == voxel_size:
-                image_data = nib.load(input_file).get_data()
-            else:
-                clipped_img = resample_to_img(input_file, mni_image)
-                image_data = clipped_img.get_data()
+        if nib.load(input_file).header.get_zooms()[0] == voxel_size:
+            image_data = nib.load(input_file).get_data()
+        else:
+            clipped_img = resample_to_img(input_file, mni_image)
+            image_data = clipped_img.get_data()
 
-            if np.all(np.isnan(image_data)) or np.count_nonzero(
-                    image_data) == 0 or image_data.size == 0:
-                X.drop(index=image, inplace=True)
-                continue
-            else:
-                appended_data.append(image_data[mask_data > 0])
-        except FileNotFoundError:
-            continue
+        if np.all(np.isnan(image_data)) or np.count_nonzero(
+                image_data) == 0 or image_data.size == 0:
+            X.drop(index=image, inplace=True)
+        else:
+            appended_data.append(image_data[mask_data > 0])
 
     y = np.vstack(appended_data)
     y = y.astype('float64')
@@ -66,17 +61,12 @@ def average_nifti(args):
 
     appended_data = 0
     for image in covar_x.index:
-        try:
-            image_data = nib.load(os.path.join(input_dir, image)).get_fdata()
-            if np.all(np.isnan(image_data)) or np.count_nonzero(
-                    image_data) == 0 or image_data.size == 0:
-                covar_x.drop(index=image, inplace=True)
-                continue
-            else:
-                appended_data += image_data
-        except FileNotFoundError:
+        image_data = nib.load(os.path.join(input_dir, image)).get_fdata()
+        if np.all(np.isnan(image_data)) or np.count_nonzero(
+                image_data) == 0 or image_data.size == 0:
             covar_x.drop(index=image, inplace=True)
-            continue
+        else:
+            appended_data += image_data
 
     sample_image = nib.load(os.path.join(input_dir, covar_x.index[0]))
     header = sample_image.header

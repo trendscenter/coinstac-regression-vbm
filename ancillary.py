@@ -86,7 +86,6 @@ def print_pvals(args, ps_global, ts_global, X_labels):
 
         nib.save(clipped_img, output_file + '.nii')
 
-        #        thresholdh = max(np.abs(p_df[column]))
         plotting.plot_stat_map(clipped_img,
                                output_file=output_file,
                                display_mode='ortho',

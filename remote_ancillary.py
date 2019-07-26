@@ -21,17 +21,6 @@ def get_stats_to_dict(col_names, *b):
     return dict_list
 
 
-def extract_sites(site_dict):
-    """Extracts and returns sub-site identifiers from each site
-    """
-    for _, site in site_dict.items():
-        if isinstance(site, dict):
-            for found in extract_sites(site):
-                yield found
-        else:
-            yield site
-
-
 def return_uniques_and_counts(df):
     """Return unique-values of the categorical variables and their counts
     """

@@ -25,11 +25,13 @@ warnings.simplefilter("ignore")
 def local_0(args):
     """ The first function in the local computation chain
     """
+    input_ = args["input"]
+    threshold = input_["threshold"]
+    voxel_size = input_["voxel_size"]
+
     categorical_dict = parse_for_categorical(args)
     average_nifti(args)
-
-    threshold = args["input"]["threshold"]
-    voxel_size = args["input"]["voxel_size"]
+    write_file(args, args, 'cache', 'args_file')
 
     output_dict = {
         "categorical_dict": categorical_dict,
@@ -45,15 +47,14 @@ def local_0(args):
         "cache": cache_dict,
     }
 
-    write_file(args, args, 'cache', 'args_file')
-
     return json.dumps(computation_output_dict)
 
 
 def local_1(args):
     """ The second function in the local computation chain
     """
-    cache_ = args["state"]["cacheDirectory"]
+    state_ = args["state"]
+    cache_ = state_["cacheDirectory"]
 
     original_args = read_file(args, 'cache', 'args_file')
     regularizer_l2 = original_args['input']['lambda']
