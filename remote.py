@@ -72,17 +72,13 @@ def remote_1(args):
         input_list[site]["local_stats_list"] for site in input_list
     ]
 
-    beta_vector_0 = [
+    beta_vector_0 = sum([
         np.array(input_list[site]["XtransposeX_local"]) for site in input_list
-    ]
+    ])
 
-    beta_vector_0 = sum(beta_vector_0)
-
-    beta_vector_1 = [
+    beta_vector_1 = sum([
         np.array(input_list[site]["Xtransposey_local"]) for site in input_list
-    ]
-
-    beta_vector_1 = sum(beta_vector_1)
+    ])
 
     all_lambdas = [input_list[site]["lambda"] for site in input_list]
 
