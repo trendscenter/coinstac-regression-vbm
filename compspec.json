@@ -11,14 +11,14 @@
     "dockerImage": "regression-vbm",
     "command": [
       "python",
-      "\/computation\/local.py"
+      "\/computation\/scripts\/local.py"
     ],
     "remote": {
       "type": "docker",
       "dockerImage": "regression-vbm",
       "command": [
         "python",
-        "\/computation\/remote.py"
+        "\/computation\/scripts\/remote.py"
       ]
     },
     "input": {
