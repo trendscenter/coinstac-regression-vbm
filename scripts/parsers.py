@@ -93,7 +93,7 @@ def parse_covar_info(args):
     covar_info = input_["covariates"]
 
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0][:25]
+    covar_data = covar_info[0][0]
     covar_labels = covar_info[1]
     covar_types = covar_info[2]
 
