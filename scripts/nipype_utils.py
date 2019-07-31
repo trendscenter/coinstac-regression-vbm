@@ -31,7 +31,7 @@ def nifti_to_data(args, X):
     mni_image = os.path.join(args["state"]["baseDirectory"],
                              'mni_downsampled.nii')
 
-    y1 = np.zeros((len(X.index), np.count_nonzero(mask_data)), dtype='f8')
+    y = np.zeros((len(X.index), np.count_nonzero(mask_data)), dtype='f8')
     for index, image in enumerate(X.index):
         input_file = os.path.join(args["state"]["baseDirectory"], image)
         if nib.load(input_file).header.get_zooms()[0] == voxel_size:
@@ -50,40 +50,7 @@ def nifti_to_data(args, X):
                 msk_slice = mask_data[slicer, ...]
                 a.extend(img_slice[msk_slice > 0].tolist())
 
-            y1[index, :] = a
-
-    return X, y1
-
-
-def nifti_to_data_noslice(args, X):
-    """Read nifti files as matrices
-    """
-    voxel_size = args["input"]["voxel_size"]
-    try:
-        mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
-                                          MASK)).get_fdata()
-    except FileNotFoundError:
-        raise Exception("Missing Mask at " + args["state"]["clientId"])
-
-    mni_image = os.path.join(args["state"]["baseDirectory"],
-                             'mni_downsampled.nii')
-    appended_data = []
-    for image in X.index:
-        input_file = os.path.join(args["state"]["baseDirectory"], image)
-        if nib.load(input_file).header.get_zooms()[0] == voxel_size:
-            image_data = nib.load(input_file).get_data()
-        else:
-            clipped_img = resample_to_img(input_file, mni_image)
-            image_data = clipped_img.get_data()
-
-        if np.all(np.isnan(image_data)) or np.count_nonzero(
-                image_data) == 0 or image_data.size == 0:
-            X.drop(index=image, inplace=True)
-        else:
-            appended_data.append(image_data[mask_data > 0])
-
-    y = np.vstack(appended_data)
-    y = y.astype('float64')
+            y[index, :] = a
 
     return X, y
 
@@ -99,7 +66,7 @@ def average_nifti(args):
 
     appended_data = 0
     for image in covar_x.index:
-        image_data = nib.load(os.path.join(input_dir, image)).get_fdata()
+        image_data = nib.load(os.path.join(input_dir, image)).dataobj[:]
         if np.all(np.isnan(image_data)) or np.count_nonzero(
                 image_data) == 0 or image_data.size == 0:
             covar_x.drop(index=image, inplace=True)
