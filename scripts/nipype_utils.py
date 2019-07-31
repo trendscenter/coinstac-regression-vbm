@@ -46,8 +46,8 @@ def nifti_to_data(args, X):
         else:
             a = []
             for slicer in range(mask_dim[-1]):
-                img_slice = image_data[..., slicer]
-                msk_slice = mask_data[..., slicer]
+                img_slice = image_data[slicer, ...]
+                msk_slice = mask_data[slicer, ...]
                 a.extend(img_slice[msk_slice > 0].tolist())
 
             y1[index, :] = a
