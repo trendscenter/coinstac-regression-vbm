@@ -11,11 +11,11 @@ import warnings
 import numpy as np
 import pandas as pd
 import ujson as json
+from scipy import stats
 
-import regression as reg
 from ancillary import encode_png, print_beta_images, print_pvals
 from nipype_utils import calculate_mask
-from remote_ancillary import return_uniques_and_counts
+from remote_ancillary import remote_stats, return_uniques_and_counts
 from rw_utils import read_file
 from utils import list_recursive
 
@@ -183,25 +183,19 @@ def remote_2(args):
 
     SSE_global = sum(
         [np.array(input_list[site]["SSE_local"]) for site in input_list])
-    #    SST_global = sum(
-    #        [np.array(input_list[site]["SST_local"]) for site in input_list])
+    SST_global = sum(
+        [np.array(input_list[site]["SST_local"]) for site in input_list])
     varX_matrix_global = sum([
         np.array(input_list[site]["varX_matrix_local"]) for site in input_list
     ])
 
-    #    r_squared_global = 1 - (SSE_global / SST_global)
+    r_squared_global = 1 - (SSE_global / SST_global)
     MSE = SSE_global / np.array(dof_global)
-
-    ts_global = []
-    ps_global = []
-
-    for i, _ in enumerate(MSE):
-        var_covar_beta_global = MSE[i] * np.linalg.inv(varX_matrix_global)
-        se_beta_global = np.sqrt(var_covar_beta_global.diagonal())
-        ts = (avg_beta_vector[i] / se_beta_global).tolist()
-        ps = reg.t_to_p(ts, dof_global[i])
-        ts_global.append(ts)
-        ps_global.append(ps)
+    ts_global = remote_stats(MSE, varX_matrix_global,
+                             np.array(avg_beta_vector))
+    ps_global = [
+        2 * stats.t.sf(np.abs(t), df) for t, df in zip(ts_global, dof_global)
+    ]
 
     print_pvals(args, ps_global, ts_global, X_labels)
     print_beta_images(args, avg_beta_vector, X_labels)
