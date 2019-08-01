@@ -5,6 +5,7 @@ Created on Wed Jul 24 21:01:15 2019
 
 @author: hgazula
 """
+import multiprocessing
 import os
 
 import nibabel as nib
@@ -17,35 +18,45 @@ MASK = 'mask.nii'
 MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
 
 
-def nifti_to_data(args, X):
-    """Read nifti files as matrices
-    """
+def read_multi(args, X, image):
     voxel_size = args["input"]["voxel_size"]
     try:
         mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
                                           MASK)).get_fdata()
+        mask_dim = mask_data.shape
     except FileNotFoundError:
         raise Exception("Missing Mask at " + args["state"]["clientId"])
 
     mni_image = os.path.join(args["state"]["baseDirectory"],
                              'mni_downsampled.nii')
-    appended_data = []
-    for image in X.index:
-        input_file = os.path.join(args["state"]["baseDirectory"], image)
-        if nib.load(input_file).header.get_zooms()[0] == voxel_size:
-            image_data = nib.load(input_file).get_data()
-        else:
-            clipped_img = resample_to_img(input_file, mni_image)
-            image_data = clipped_img.get_data()
 
-        if np.all(np.isnan(image_data)) or np.count_nonzero(
-                image_data) == 0 or image_data.size == 0:
-            X.drop(index=image, inplace=True)
-        else:
-            appended_data.append(image_data[mask_data > 0])
+    input_file = os.path.join(args["state"]["baseDirectory"], image)
+    if nib.load(input_file).header.get_zooms()[0] == voxel_size:
+        image_data = nib.load(input_file).get_data()
+    else:
+        clipped_img = resample_to_img(input_file, mni_image)
+        image_data = clipped_img.get_data()
 
-    y = np.vstack(appended_data)
-    y = y.astype('float64')
+    if np.all(np.isnan(image_data)) or np.count_nonzero(
+            image_data) == 0 or image_data.size == 0:
+        X.drop(index=image, inplace=True)
+    else:
+        a = []
+        for slice_index in range(mask_dim[-1]):
+            img_slice = image_data[slice_index, ...]
+            msk_slice = mask_data[slice_index, ...]
+            a.extend(img_slice[msk_slice > 0].tolist())
+
+    return a
+
+
+def nifti_to_data(args, X):
+    """Read nifti files as matrices
+    """
+    pool = multiprocessing.Pool()
+    y1 = pool.starmap(read_multi, [(args, X, image) for image in X.index])
+    pool.close()
+    y = np.array(y1)
 
     return X, y
 
@@ -61,7 +72,7 @@ def average_nifti(args):
 
     appended_data = 0
     for image in covar_x.index:
-        image_data = nib.load(os.path.join(input_dir, image)).get_fdata()
+        image_data = nib.load(os.path.join(input_dir, image)).dataobj[:]
         if np.all(np.isnan(image_data)) or np.count_nonzero(
                 image_data) == 0 or image_data.size == 0:
             covar_x.drop(index=image, inplace=True)
