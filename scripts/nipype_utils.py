@@ -5,6 +5,7 @@ Created on Wed Jul 24 21:01:15 2019
 
 @author: hgazula
 """
+import multiprocessing
 import os
 
 import nibabel as nib
@@ -17,9 +18,7 @@ MASK = 'mask.nii'
 MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
 
 
-def nifti_to_data(args, X):
-    """Read nifti files as matrices
-    """
+def read_multi(args, X, image):
     voxel_size = args["input"]["voxel_size"]
     try:
         mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
@@ -31,26 +30,33 @@ def nifti_to_data(args, X):
     mni_image = os.path.join(args["state"]["baseDirectory"],
                              'mni_downsampled.nii')
 
-    y = np.zeros((len(X.index), np.count_nonzero(mask_data)), dtype='f8')
-    for index, image in enumerate(X.index):
-        input_file = os.path.join(args["state"]["baseDirectory"], image)
-        if nib.load(input_file).header.get_zooms()[0] == voxel_size:
-            image_data = nib.load(input_file).get_data()
-        else:
-            clipped_img = resample_to_img(input_file, mni_image)
-            image_data = clipped_img.get_data()
+    input_file = os.path.join(args["state"]["baseDirectory"], image)
+    if nib.load(input_file).header.get_zooms()[0] == voxel_size:
+        image_data = nib.load(input_file).get_data()
+    else:
+        clipped_img = resample_to_img(input_file, mni_image)
+        image_data = clipped_img.get_data()
 
-        if np.all(np.isnan(image_data)) or np.count_nonzero(
-                image_data) == 0 or image_data.size == 0:
-            X.drop(index=image, inplace=True)
-        else:
-            a = []
-            for slicer in range(mask_dim[-1]):
-                img_slice = image_data[slicer, ...]
-                msk_slice = mask_data[slicer, ...]
-                a.extend(img_slice[msk_slice > 0].tolist())
+    if np.all(np.isnan(image_data)) or np.count_nonzero(
+            image_data) == 0 or image_data.size == 0:
+        X.drop(index=image, inplace=True)
+    else:
+        a = []
+        for slice_index in range(mask_dim[-1]):
+            img_slice = image_data[slice_index, ...]
+            msk_slice = mask_data[slice_index, ...]
+            a.extend(img_slice[msk_slice > 0].tolist())
 
-            y[index, :] = a
+    return a
+
+
+def nifti_to_data(args, X):
+    """Read nifti files as matrices
+    """
+    pool = multiprocessing.Pool()
+    y1 = pool.starmap(read_multi, [(args, X, image) for image in X.index])
+    pool.close()
+    y = np.array(y1)
 
     return X, y
 
