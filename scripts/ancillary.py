@@ -19,33 +19,34 @@ MASK = 'mask.nii'
 
 
 def encode_png(args):
-    """Begin code to serialize png images
-    """
+    """Serialize png images."""
     png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
 
     encoded_png_files = []
     for file in png_files:
         if file.endswith('.png'):
             mrn_image = os.path.join(args["state"]["outputDirectory"], file)
-            with open(mrn_image, "rb") as imageFile:
-                mrn_image_str = base64.b64encode(imageFile.read())
+            with open(mrn_image, "rb") as image_file:
+                mrn_image_str = base64.b64encode(image_file.read())
             encoded_png_files.append(mrn_image_str)
 
     return dict(
         zip([f for f in png_files if f.endswith('.png')], encoded_png_files))
 
 
-def print_beta_images(args, avg_beta_vector, X_labels):
-    beta_df = pd.DataFrame(avg_beta_vector, columns=X_labels)
+def print_beta_images(args, avg_beta_vector, covar_labels):
+    """Print regression coefficients as nifti files."""
+    beta_df = pd.DataFrame(avg_beta_vector, columns=covar_labels)
 
-    images_folder = args["state"]["outputDirectory"]
+    state_ = args["state"]
+    images_folder = state_["outputDirectory"]
 
     try:
         mask = nib.load(os.path.join(args["state"]["baseDirectory"], MASK))
     except FileNotFoundError:
         mask = nib.load(os.path.join(args["state"]["cacheDirectory"], MASK))
 
-    for column in beta_df.columns:
+    for column in beta_df:
         new_data = np.zeros(mask.shape)
         new_data[mask.get_data() > 0] = beta_df[column]
 
@@ -62,19 +63,20 @@ def print_beta_images(args, avg_beta_vector, X_labels):
                                colorbar=True)
 
 
-def print_pvals(args, ps_global, ts_global, X_labels):
-    p_df = pd.DataFrame(ps_global, columns=X_labels)
-    t_df = pd.DataFrame(ts_global, columns=X_labels)
+def print_pvals(args, ps_global, ts_global, covar_labels):
+    """Print regression coefficients' p-values as nifti files."""
+    p_df = pd.DataFrame(ps_global, columns=covar_labels)
+    t_df = pd.DataFrame(ts_global, columns=covar_labels)
 
-    # TODO manual entry, remove later
-    images_folder = args["state"]["outputDirectory"]
+    state_ = args["state"]
+    images_folder = state_["outputDirectory"]
 
     try:
         mask = nib.load(os.path.join(args["state"]["baseDirectory"], MASK))
     except FileNotFoundError:
         mask = nib.load(os.path.join(args["state"]["cacheDirectory"], MASK))
 
-    for column in p_df.columns:
+    for column in p_df:
         new_data = np.zeros(mask.shape)
         new_data[mask.get_data() > 0] = -1 * np.log10(p_df[column]) * np.sign(
             t_df[column])
