@@ -17,7 +17,7 @@ from local_ancillary import (add_site_covariates, local_stats_to_dict_numba,
                              vbm_parser)
 from nipype_utils import average_nifti
 from parsers import parse_for_categorical
-from rw_utils import read_file, write_file
+from rw_utils import write_file
 from utils import list_recursive
 
 warnings.simplefilter("ignore")
@@ -32,6 +32,7 @@ def local_0(args):
 
     threshold = input_["threshold"]
     voxel_size = input_["voxel_size"]
+    lamb = args['input']['lambda']
 
     categorical_dict = parse_for_categorical(args)
     covar_x = average_nifti(args)
@@ -51,6 +52,7 @@ def local_0(args):
     computation_output_dict = {
         "output": output_dict,
         "cache": cache_dict,
+        "lambda": lamb
     }
 
     return json.dumps(computation_output_dict)
@@ -64,9 +66,8 @@ def local_1(args):
     output_dir = state_["transferDirectory"]
     cache_dir = state_["cacheDirectory"]
 
-    original_args = read_file(args, 'cache', 'args_file')
     X = pd.read_csv(os.path.join(cache_dir, cache_['covariates']), index_col=0)
-    regularizer_l2 = original_args['input']['lambda']
+    regularizer_l2 = cache_['lambda']
 
     # Local Statistics
     encoded_X, y = vbm_parser(args, X)
