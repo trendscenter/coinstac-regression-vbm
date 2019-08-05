@@ -73,11 +73,17 @@ def remote_1(args):
     ]
 
     beta_vector_0 = sum([
-        np.array(input_list[site]["XtransposeX_local"]) for site in input_list
+        np.load(
+            os.path.join(input_dir, site,
+                         input_list[site]["XtransposeX_local"]))
+        for site in input_list
     ])
 
     beta_vector_1 = sum([
-        np.array(input_list[site]["Xtransposey_local"]) for site in input_list
+        np.load(
+            os.path.join(input_dir, site,
+                         input_list[site]["Xtransposey_local"]))
+        for site in input_list
     ])
 
     all_lambdas = [input_list[site]["lambda"] for site in input_list]
@@ -219,14 +225,14 @@ def remote_2(args):
 
 if __name__ == '__main__':
 
-    PARSED_ARGS = json.loads(sys.stdin.read())
-    PHASE_KEY = list(list_recursive(PARSED_ARGS, 'computation_phase'))
+    PARAM_DICT = json.loads(sys.stdin.read())
+    PHASE_KEY = list(list_recursive(PARAM_DICT, 'computation_phase'))
 
     if "local_0" in PHASE_KEY:
-        sys.stdout.write(remote_0(PARSED_ARGS))
+        sys.stdout.write(remote_0(PARAM_DICT))
     elif "local_1" in PHASE_KEY:
-        sys.stdout.write(remote_1(PARSED_ARGS))
+        sys.stdout.write(remote_1(PARAM_DICT))
     elif "local_2" in PHASE_KEY:
-        sys.stdout.write(remote_2(PARSED_ARGS))
+        sys.stdout.write(remote_2(PARAM_DICT))
     else:
         raise ValueError("Error occurred at Remote")

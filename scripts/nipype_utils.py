@@ -19,7 +19,7 @@ MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
 
 
 def read_multi(args, X, image):
-    voxel_size = args["input"]["voxel_size"]
+    voxel_size = args["cache"]["voxel_size"]
     try:
         mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
                                           MASK)).get_fdata()
@@ -37,15 +37,11 @@ def read_multi(args, X, image):
         clipped_img = resample_to_img(input_file, mni_image)
         image_data = clipped_img.get_data()
 
-    if np.all(np.isnan(image_data)) or np.count_nonzero(
-            image_data) == 0 or image_data.size == 0:
-        X.drop(index=image, inplace=True)
-    else:
-        a = []
-        for slice_index in range(mask_dim[-1]):
-            img_slice = image_data[slice_index, ...]
-            msk_slice = mask_data[slice_index, ...]
-            a.extend(img_slice[msk_slice > 0].tolist())
+    a = []
+    for slice_index in range(mask_dim[-1]):
+        img_slice = image_data[slice_index, ...]
+        msk_slice = mask_data[slice_index, ...]
+        a.extend(img_slice[msk_slice > 0].tolist())
 
     return a
 
@@ -54,11 +50,10 @@ def nifti_to_data(args, X):
     """Read nifti files as matrices
     """
     pool = multiprocessing.Pool()
-    y1 = pool.starmap(read_multi, [(args, X, image) for image in X.index])
+    y = pool.starmap(read_multi, [(args, X, image) for image in X.index])
     pool.close()
-    y = np.array(y1)
 
-    return X, y
+    return np.array(y)
 
 
 def average_nifti(args):
@@ -75,7 +70,7 @@ def average_nifti(args):
         image_data = nib.load(os.path.join(input_dir, image)).dataobj[:]
         if np.all(np.isnan(image_data)) or np.count_nonzero(
                 image_data) == 0 or image_data.size == 0:
-            covar_x.drop(index=image, inplace=True)
+            covar_x = covar_x.drop(index=image)
         else:
             appended_data += image_data
 
@@ -88,6 +83,8 @@ def average_nifti(args):
     clipped_img = nib.Nifti1Image(avg_nifti, affine, header)
     output_file = os.path.join(output_dir, 'avg_nifti.nii')
     nib.save(clipped_img, output_file)
+
+    return covar_x
 
 
 def calculate_mask(args):

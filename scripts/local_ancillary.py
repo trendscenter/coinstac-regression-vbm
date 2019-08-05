@@ -14,7 +14,7 @@ from numba import jit, prange
 
 from ancillary import encode_png, print_beta_images, print_pvals
 from nipype_utils import nifti_to_data
-from parsers import parse_covar_info, perform_encoding
+from parsers import perform_encoding
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -142,7 +142,7 @@ def merging_globals(args, X, site_covar_dict, dict_, key):
     return X
 
 
-def add_site_covariates(args, original_args, X):
+def add_site_covariates(args, X):
     """Add site covariates based on information gathered from all sites
     """
     input_ = args["input"]
@@ -189,12 +189,11 @@ def stats_calculation(X, y, avg_beta_vec, mean_y_global):
     return sse_local, sst_local
 
 
-def vbm_parser(args):
+def vbm_parser(args, X):
     """Parse the nifti (.nii) specific inputspec.json and return the
     covariate matrix (X) as well the dependent matrix (y) as dataframes
     """
-    selected_covar, _ = parse_covar_info(args)
-    covar_info, y_info = nifti_to_data(args, selected_covar)
-    encoded_covar_info = perform_encoding(args, covar_info)
+    y_info = nifti_to_data(args, X)
+    encoded_covar_info = perform_encoding(args, X)
 
-    return (encoded_covar_info, covar_info, y_info)
+    return (encoded_covar_info, y_info)

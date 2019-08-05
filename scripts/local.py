@@ -9,6 +9,7 @@ import sys
 import warnings
 
 import numpy as np
+import pandas as pd
 import ujson as json
 
 from local_ancillary import (add_site_covariates, local_stats_to_dict_numba,
@@ -26,12 +27,17 @@ def local_0(args):
     """ The first function in the local computation chain
     """
     input_ = args["input"]
+    state_ = args["state"]
+    cache_dir = state_["cacheDirectory"]
+
     threshold = input_["threshold"]
     voxel_size = input_["voxel_size"]
 
     categorical_dict = parse_for_categorical(args)
-    average_nifti(args)
+    covar_x = average_nifti(args)
+
     write_file(args, args, 'cache', 'args_file')
+    covar_x.to_csv(os.path.join(cache_dir, 'X_df'))
 
     output_dict = {
         "categorical_dict": categorical_dict,
@@ -40,7 +46,7 @@ def local_0(args):
         "avg_nifti": "avg_nifti.nii",
         "computation_phase": "local_0"
     }
-    cache_dict = {}
+    cache_dict = {"covariates": 'X_df', "voxel_size": voxel_size}
 
     computation_output_dict = {
         "output": output_dict,
@@ -53,19 +59,22 @@ def local_0(args):
 def local_1(args):
     """ The second function in the local computation chain
     """
+    cache_ = args["cache"]
     state_ = args["state"]
-    cache_ = state_["cacheDirectory"]
+    output_dir = state_["transferDirectory"]
+    cache_dir = state_["cacheDirectory"]
 
     original_args = read_file(args, 'cache', 'args_file')
+    X = pd.read_csv(os.path.join(cache_dir, cache_['covariates']), index_col=0)
     regularizer_l2 = original_args['input']['lambda']
 
     # Local Statistics
-    encoded_X, X, y = vbm_parser(original_args)
+    encoded_X, y = vbm_parser(args, X)
     meanY_vector, lenY_vector = mean_and_len_y(y)
     _, local_stats_list = local_stats_to_dict_numba(args, encoded_X, y)
 
     # Global Statistics
-    augmented_X = add_site_covariates(args, original_args, X)
+    augmented_X = add_site_covariates(args, X)
     X_labels = list(augmented_X.columns)
     biased_X = augmented_X.values.astype('float64')
 
@@ -73,12 +82,16 @@ def local_1(args):
     Xtransposey_local = multiply(biased_X, y)
 
     # Writing covariates and dependents to cache as files
-    np.save(os.path.join(cache_, 'X.npy'), biased_X)
-    np.save(os.path.join(cache_, 'y.npy'), y)
+    np.save(os.path.join(cache_dir, 'X.npy'), biased_X)
+    np.save(os.path.join(cache_dir, 'y.npy'), y)
+
+    # Writing XTX and XTy to output as files
+    np.save(os.path.join(output_dir, 'XTX.npy'), XtransposeX_local)
+    np.save(os.path.join(output_dir, 'XTy.npy'), Xtransposey_local)
 
     output_dict = {
-        "XtransposeX_local": XtransposeX_local.tolist(),
-        "Xtransposey_local": Xtransposey_local.tolist(),
+        "XtransposeX_local": 'XTX.npy',
+        "Xtransposey_local": 'XTy.npy',
         "mean_y_local": meanY_vector.tolist(),
         "count_local": lenY_vector.tolist(),
         "local_stats_list": local_stats_list,
@@ -126,10 +139,10 @@ def local_2(args):
         After receiving  the mean_y_global, calculate the SSE_local,
         SST_local and varX_matrix_local
     """
-    state_ = args["state"]
-    cache_ = args["cache"]
-    cache_dir = state_["cacheDirectory"]
     input_ = args["input"]
+    cache_ = args["cache"]
+    state_ = args["state"]
+    cache_dir = state_["cacheDirectory"]
 
     biased_X = np.load(os.path.join(cache_dir, cache_["covariates"]))
     y = np.load(os.path.join(cache_dir, cache_["dependents"]))
@@ -160,14 +173,14 @@ def local_2(args):
 
 if __name__ == '__main__':
 
-    PARSED_ARGS = json.loads(sys.stdin.read())
-    PHASE_KEY = list(list_recursive(PARSED_ARGS, 'computation_phase'))
+    PARAM_DICT = json.loads(sys.stdin.read())
+    PHASE_KEY = list(list_recursive(PARAM_DICT, 'computation_phase'))
 
     if not PHASE_KEY:
-        sys.stdout.write(local_0(PARSED_ARGS))
+        sys.stdout.write(local_0(PARAM_DICT))
     elif "remote_0" in PHASE_KEY:
-        sys.stdout.write(local_1(PARSED_ARGS))
+        sys.stdout.write(local_1(PARAM_DICT))
     elif "remote_1" in PHASE_KEY:
-        sys.stdout.write(local_2(PARSED_ARGS))
+        sys.stdout.write(local_2(PARAM_DICT))
     else:
         raise ValueError("Error occurred at Local")
