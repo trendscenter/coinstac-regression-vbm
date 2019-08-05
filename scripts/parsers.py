@@ -106,9 +106,8 @@ def parse_covar_info(args):
     covar_info = covar_df[covar_labels]
 
     # convert bool to categorical as soon as possible
-    for column in covar_info:
-        if covar_info[column].dtype == bool:
-            covar_info[column] = covar_info[column].astype('object')
+    for column in covar_info.select_dtypes(bool):
+        covar_info[column] = covar_info[column].astype('object')
 
     # Checks for existence of files and if they don't delete row
     for file in covar_info.index:
