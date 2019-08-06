@@ -104,9 +104,16 @@ def remote_1(args):
 
     dof_global = sum(count_y_local) - avg_beta_vector.shape[1]
 
+    np.save(
+        os.path.join(args["state"]["transferDirectory"],
+                     'avg_beta_vector.npy'), avg_beta_vector)
+    np.save(
+        os.path.join(args["state"]["transferDirectory"], 'mean_y_global.npy'),
+        mean_y_global)
+
     output_dict = {
-        "avg_beta_vector": avg_beta_vector.tolist(),
-        "mean_y_global": mean_y_global.tolist(),
+        "avg_beta_vector": 'avg_beta_vector.npy',
+        "mean_y_global": 'mean_y_global.npy',
         "computation_phase": "remote_1"
     }
 
