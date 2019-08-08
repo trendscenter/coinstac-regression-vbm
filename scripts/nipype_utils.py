@@ -5,7 +5,6 @@ Created on Wed Jul 24 21:01:15 2019
 
 @author: hgazula
 """
-import multiprocessing
 import os
 
 import nibabel as nib
@@ -18,8 +17,10 @@ MASK = 'mask.nii'
 MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
 
 
-def read_multi(args, X, image):
-    voxel_size = args["cache"]["voxel_size"]
+def nifti_to_data(args, X):
+    """Read nifti files as matrices
+    """
+    voxel_size = args["input"]["voxel_size"]
     try:
         mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
                                           MASK)).get_fdata()
@@ -30,30 +31,24 @@ def read_multi(args, X, image):
     mni_image = os.path.join(args["state"]["baseDirectory"],
                              'mni_downsampled.nii')
 
-    input_file = os.path.join(args["state"]["baseDirectory"], image)
-    if nib.load(input_file).header.get_zooms()[0] == voxel_size:
-        image_data = nib.load(input_file).get_data()
-    else:
-        clipped_img = resample_to_img(input_file, mni_image)
-        image_data = clipped_img.get_data()
+    y = np.zeros((len(X.index), np.count_nonzero(mask_data)), dtype='f8')
+    for index, image in enumerate(X.index):
+        input_file = os.path.join(args["state"]["baseDirectory"], image)
+        if nib.load(input_file).header.get_zooms()[0] == voxel_size:
+            image_data = nib.load(input_file).get_data()
+        else:
+            clipped_img = resample_to_img(input_file, mni_image)
+            image_data = clipped_img.get_data()
 
-    a = []
-    for slice_index in range(mask_dim[-1]):
-        img_slice = image_data[slice_index, ...]
-        msk_slice = mask_data[slice_index, ...]
-        a.extend(img_slice[msk_slice > 0].tolist())
+        a = []
+        for slicer in range(mask_dim[-1]):
+            img_slice = image_data[slicer, ...]
+            msk_slice = mask_data[slicer, ...]
+            a.extend(img_slice[msk_slice > 0].tolist())
 
-    return a
+        y[index, :] = a
 
-
-def nifti_to_data(args, X):
-    """Read nifti files as matrices
-    """
-    pool = multiprocessing.Pool()
-    y = [pool.apply(read_multi, args=(args, X, image)) for image in X.index]
-    pool.close()
-
-    return np.array(y)
+    return y
 
 
 def average_nifti(args):
