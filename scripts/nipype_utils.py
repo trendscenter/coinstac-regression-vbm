@@ -20,7 +20,7 @@ MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
 def nifti_to_data(args, X):
     """Read nifti files as matrices
     """
-    voxel_size = args["input"]["voxel_size"]
+    voxel_size = args["cache"]["voxel_size"]
     try:
         mask_data = nib.load(os.path.join(args["state"]["baseDirectory"],
                                           MASK)).get_fdata()
