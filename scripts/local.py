@@ -19,10 +19,13 @@ from nipype_utils import average_nifti
 from parsers import parse_for_categorical
 from rw_utils import write_file
 from utils import list_recursive
+from memory_profiler import profile
+
+fp = open('/output/memory.log', 'a+')
 
 warnings.simplefilter("ignore")
 
-
+@profile(stream=fp)
 def local_0(args):
     """ The first function in the local computation chain
     """
@@ -57,7 +60,7 @@ def local_0(args):
 
     return json.dumps(computation_output_dict)
 
-
+@profile(stream=fp)
 def local_1(args):
     """ The second function in the local computation chain
     """
@@ -112,7 +115,7 @@ def local_1(args):
 
     return json.dumps(computation_output_dict)
 
-
+@profile(stream=fp)
 def local_2(args):
     """Computes the SSE_local, SST_local and varX_matrix_local
     Args:

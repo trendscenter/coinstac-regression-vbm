@@ -16,8 +16,10 @@ from nilearn import plotting
 np.seterr(divide='ignore')
 
 MASK = 'mask.nii'
+from memory_profiler import profile
+fp = open('/output/memory.log', 'a+')
 
-
+@profile(stream=fp)
 def encode_png(args):
     """Serialize png images."""
     png_files = sorted(os.listdir(args["state"]["outputDirectory"]))
@@ -33,7 +35,7 @@ def encode_png(args):
     return dict(
         zip([f for f in png_files if f.endswith('.png')], encoded_png_files))
 
-
+@profile(stream=fp)
 def print_beta_images(args, avg_beta_vector, covar_labels):
     """Print regression coefficients as nifti files."""
     beta_df = pd.DataFrame(avg_beta_vector, columns=covar_labels)
@@ -62,7 +64,7 @@ def print_beta_images(args, avg_beta_vector, covar_labels):
                                display_mode='ortho',
                                colorbar=True)
 
-
+@profile(stream=fp)
 def print_pvals(args, ps_global, ts_global, covar_labels):
     """Print regression coefficients' p-values as nifti files."""
     p_df = pd.DataFrame(ps_global, columns=covar_labels)

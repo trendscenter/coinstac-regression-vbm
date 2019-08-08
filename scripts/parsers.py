@@ -14,7 +14,12 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
+from memory_profiler import profile
 
+fp = open('/output/memory.log', 'a+')
+
+
+@profile(stream=fp)
 def parse_for_y(args, y_files, y_labels):
     """Read contents of fsl files into a dataframe"""
     y = pd.DataFrame(index=y_labels)
@@ -84,7 +89,7 @@ def fsl_parser(args):
 
     return (X, y)
 
-
+@profile(stream=fp)
 def parse_covar_info(args):
     """Read covariate information from the UI
     """
@@ -121,7 +126,7 @@ def parse_covar_info(args):
 
     return covar_info, covar_types
 
-
+@profile(stream=fp)
 def parse_for_categorical(args):
     """Return unique subsites as a dictionary
     """
@@ -134,13 +139,13 @@ def parse_for_categorical(args):
 
     return site_dict1
 
-
+@profile(stream=fp)
 def create_dummies(data_f, cols, drop_flag=True):
     """ Create dummy columns
     """
     return pd.get_dummies(data_f, columns=cols, drop_first=drop_flag)
 
-
+@profile(stream=fp)
 def perform_encoding(args, data_f, exclude_cols=(' ')):
     """Perform encoding of various categorical variables
     """

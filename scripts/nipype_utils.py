@@ -15,8 +15,12 @@ from parsers import parse_covar_info
 
 MASK = 'mask.nii'
 MNI_TEMPLATE = '/computation/templates/MNI152_T1_1mm_brain.nii'
+from memory_profiler import profile
+
+fp = open('/output/memory.log', 'a+')
 
 
+@profile(stream=fp)
 def nifti_to_data(args, X):
     """Read nifti files as matrices
     """
@@ -50,7 +54,7 @@ def nifti_to_data(args, X):
 
     return y
 
-
+@profile(stream=fp)
 def average_nifti(args):
     """Reads in all the nifti images and calculates their average
     """
@@ -81,7 +85,7 @@ def average_nifti(args):
 
     return covar_x
 
-
+@profile(stream=fp)
 def calculate_mask(args):
     """Calculates the average of all masks
     """

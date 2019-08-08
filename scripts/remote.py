@@ -21,8 +21,12 @@ from utils import list_recursive
 
 warnings.simplefilter("ignore")
 OUTPUT_FROM_LOCAL = 'local_output'
+from memory_profiler import profile
+
+fp = open('/output/memory.log', 'a+')
 
 
+@profile(stream=fp)
 def remote_0(args):
     """The first function in the remote computation chain
     """
@@ -48,7 +52,7 @@ def remote_0(args):
 
     return json.dumps(computation_output_dict)
 
-
+@profile(stream=fp)
 def remote_1(args):
     """ The second function in the local computation chain
     """
@@ -136,7 +140,7 @@ def remote_1(args):
 
     return json.dumps(computation_output_dict)
 
-
+@profile(stream=fp)
 def remote_2(args):
     """
     Computes the global model fit statistics, r_2_global, ts_global, ps_global

@@ -20,7 +20,10 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
 
+fp = open('/output/memory.log', 'a+')
 
+
+@profile(stream=fp)
 def mean_and_len_y(y):
     """Caculate the mean and length of each y vector
     """
@@ -67,7 +70,7 @@ def gather_local_stats(X, y):
 
     return (params, sse, tvalues, rsquared, dof_global)
 
-
+@profile(stream=fp)
 def local_stats_to_dict_numba(args, X, y):
     """Wrap local statistics into a dictionary to be sent to the remote
     """
@@ -188,7 +191,7 @@ def stats_calculation(X, y, avg_beta_vec, mean_y_global):
 
     return sse_local, sst_local
 
-
+@profile(stream=fp)
 def vbm_parser(args, X):
     """Parse the nifti (.nii) specific inputspec.json and return the
     covariate matrix (X) as well the dependent matrix (y) as dataframes
