@@ -9,12 +9,11 @@ import sys
 import warnings
 
 import numpy as np
-import pandas as pd
 import ujson as json
 
-from local_ancillary import (add_site_covariates, local_stats_to_dict_numba,
-                             mean_and_len_y, multiply, stats_calculation,
-                             vbm_parser)
+from local_ancillary import (add_site_covariates, from_csv,
+                             local_stats_to_dict_numba, mean_and_len_y,
+                             multiply, stats_calculation, to_csv, vbm_parser)
 from nipype_utils import average_nifti
 from parsers import parse_for_categorical
 from rw_utils import write_file
@@ -38,7 +37,8 @@ def local_0(args):
     covar_x = average_nifti(args)
 
     write_file(args, args, 'cache', 'args_file')
-    covar_x.to_csv(os.path.join(cache_dir, 'X_df'))
+
+    to_csv(covar_x, os.path.join(cache_dir, 'X_df'))
 
     output_dict = {
         "categorical_dict": categorical_dict,
@@ -66,7 +66,7 @@ def local_1(args):
     output_dir = state_["transferDirectory"]
     cache_dir = state_["cacheDirectory"]
 
-    X = pd.read_csv(os.path.join(cache_dir, cache_['covariates']), index_col=0)
+    X = from_csv(os.path.join(cache_dir, cache_['covariates']))
     regularizer_l2 = cache_['lambda']
 
     # Local Statistics
