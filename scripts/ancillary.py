@@ -40,6 +40,7 @@ def print_beta_images(args, avg_beta_vector, covar_labels):
 
     state_ = args["state"]
     images_folder = state_["outputDirectory"]
+    images_folder1 = state_["transferDirectory"]
 
     try:
         mask = nib.load(os.path.join(args["state"]["baseDirectory"], MASK))
@@ -54,13 +55,19 @@ def print_beta_images(args, avg_beta_vector, covar_labels):
 
         clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
         output_file = os.path.join(images_folder, image_string)
+        output_file1 = os.path.join(images_folder1, image_string)
 
         nib.save(clipped_img, output_file + '.nii')
+        nib.save(clipped_img, output_file1 + '.nii')
 
         plotting.plot_stat_map(clipped_img,
                                output_file=output_file,
                                display_mode='ortho',
                                colorbar=True)
+        plotting.plot_stat_map(clipped_img,
+                       output_file=output_file1,
+                       display_mode='ortho',
+                       colorbar=True)
 
 
 def print_pvals(args, ps_global, ts_global, covar_labels):
@@ -70,6 +77,7 @@ def print_pvals(args, ps_global, ts_global, covar_labels):
 
     state_ = args["state"]
     images_folder = state_["outputDirectory"]
+    images_folder1 = state_["transferDirectory"]
 
     try:
         mask = nib.load(os.path.join(args["state"]["baseDirectory"], MASK))
@@ -85,10 +93,16 @@ def print_pvals(args, ps_global, ts_global, covar_labels):
 
         clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
         output_file = os.path.join(images_folder, image_string)
+        output_file1 = os.path.join(images_folder1, image_string)
 
         nib.save(clipped_img, output_file + '.nii')
+        nib.save(clipped_img, output_file1 + '.nii')
 
         plotting.plot_stat_map(clipped_img,
                                output_file=output_file,
                                display_mode='ortho',
                                colorbar=True)
+        plotting.plot_stat_map(clipped_img,
+                       output_file=output_file1,
+                       display_mode='ortho',
+                       colorbar=True)
