@@ -23,7 +23,6 @@ from ancillary import saveBin, loadBin
 warnings.simplefilter("ignore")
 
 
-
 def local_0(args):
     """ The first function in the local computation chain
     """
