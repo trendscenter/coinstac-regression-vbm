@@ -13,7 +13,7 @@ import pandas as pd
 import ujson as json
 from scipy import stats
 
-from ancillary import encode_png, print_beta_images, print_pvals
+from ancillary import encode_png, print_beta_images, print_pvals, saveBin, loadBin
 from nipype_utils import calculate_mask
 from remote_ancillary import remote_stats, return_uniques_and_counts
 from rw_utils import read_file
@@ -73,14 +73,14 @@ def remote_1(args):
     ]
 
     beta_vector_0 = sum([
-        np.load(
+        loadBin(
             os.path.join(input_dir, site,
                          input_list[site]["XtransposeX_local"]))
         for site in input_list
     ])
 
     beta_vector_1 = sum([
-        np.load(
+        loadBin(
             os.path.join(input_dir, site,
                          input_list[site]["Xtransposey_local"]))
         for site in input_list
@@ -104,14 +104,14 @@ def remote_1(args):
 
     dof_global = sum(count_y_local) - avg_beta_vector.shape[1]
 
-    np.save(
+    saveBin(
         os.path.join(args["state"]["transferDirectory"],
                      'avg_beta_vector.npy'), avg_beta_vector)
-    np.save(
+    saveBin(
         os.path.join(args["state"]["transferDirectory"], 'mean_y_global.npy'),
         mean_y_global)
 
-    np.save(
+    saveBin(
         os.path.join(args["state"]["cacheDirectory"], 'avg_beta_vector.npy'),
         avg_beta_vector)
 
@@ -198,7 +198,7 @@ def remote_2(args):
     #    avg_beta_vector = cache_list["avg_beta_vector"]
     #    dof_global = cache_list["dof_global"]
 
-    avg_beta_vector = np.load(
+    avg_beta_vector = loadBin(
         os.path.join(cache_dir, cache_list["avg_beta_vector"]))
     dof_global = cache_list["dof_global"]
 
