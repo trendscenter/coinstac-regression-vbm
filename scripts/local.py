@@ -18,6 +18,7 @@ from nipype_utils import average_nifti
 from parsers import parse_for_categorical
 from rw_utils import write_file
 from utils import list_recursive
+from ancillary import saveBin, loadBin
 
 warnings.simplefilter("ignore")
 
@@ -83,12 +84,12 @@ def local_1(args):
     Xtransposey_local = multiply(biased_X, y)
 
     # Writing covariates and dependents to cache as files
-    np.save(os.path.join(cache_dir, 'X.npy'), biased_X)
-    np.save(os.path.join(cache_dir, 'y.npy'), y)
+    saveBin(os.path.join(cache_dir, 'X.npy'), biased_X)
+    saveBin(os.path.join(cache_dir, 'y.npy'), y)
 
     # Writing XTX and XTy to output as files
-    np.save(os.path.join(output_dir, 'XTX.npy'), XtransposeX_local)
-    np.save(os.path.join(output_dir, 'XTy.npy'), Xtransposey_local)
+    saveBin(os.path.join(output_dir, 'XTX.npy'), XtransposeX_local)
+    saveBin(os.path.join(output_dir, 'XTy.npy'), Xtransposey_local)
 
     output_dict = {
         "XtransposeX_local": 'XTX.npy',
@@ -145,17 +146,17 @@ def local_2(args):
     state_ = args["state"]
     cache_dir = state_["cacheDirectory"]
 
-    biased_X = np.load(os.path.join(cache_dir, cache_["covariates"]))
-    y = np.load(os.path.join(cache_dir, cache_["dependents"]))
+    biased_X = loadBin(os.path.join(cache_dir, cache_["covariates"]))
+    y = loadBin(os.path.join(cache_dir, cache_["dependents"]))
 
     #    avg_beta_vector = input_["avg_beta_vector"]
     #    mean_y_global = input_["mean_y_global"]
 
-    avg_beta_vector = np.load(
+    avg_beta_vector = loadBin(
         os.path.join(args["state"]["baseDirectory"],
                      input_["avg_beta_vector"]))
 
-    mean_y_global = np.load(
+    mean_y_global = loadBin(
         os.path.join(args["state"]["baseDirectory"], input_["mean_y_global"]))
 
     varX_matrix_local = multiply(biased_X, biased_X)
