@@ -85,7 +85,6 @@ def local_1(args):
 
     # Writing covariates and dependents to cache as files
     saveBin(os.path.join(cache_dir, 'X.npy'), biased_X)
-    # saveBin(os.path.join(cache_dir, 'y.npy'), y)
     saveBin(os.path.join(cache_dir, 'y.npy'), y)
 
     # Writing XTX and XTy to output as files
@@ -148,7 +147,6 @@ def local_2(args):
     cache_dir = state_["cacheDirectory"]
 
     biased_X = loadBin(os.path.join(cache_dir, cache_["covariates"]))
-    # y = loadBin(os.path.join(cache_dir, cache_["dependents"]))
     y = loadBin(os.path.join(cache_dir, cache_["dependents"]))
 
     #    avg_beta_vector = input_["avg_beta_vector"]
