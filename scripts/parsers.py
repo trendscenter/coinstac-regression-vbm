@@ -119,6 +119,10 @@ def parse_covar_info(args):
         raise Exception(
             'Could not find .nii files specified in the covariates csv')
 
+    # convert contents of object columns to lowercase
+    for column in covar_info.select_dtypes(object):
+        covar_info[column] = covar_info[column].str.lower()
+
     return covar_info, covar_types
 
 
