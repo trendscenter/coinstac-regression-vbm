@@ -9,10 +9,11 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import scipy as sp
 from numba import jit, prange
 
-from ancillary import encode_png, print_beta_images, print_pvals
+import scipy as sp
+from ancillary import (encode_png, print_beta_images, print_pvals,
+                       print_r2_image)
 from nipype_utils import nifti_to_data
 from parsers import perform_encoding
 
@@ -89,7 +90,7 @@ def local_stats_to_dict_numba(args, X, y):
 
     X1 = X.values.astype('float64')
 
-    params, _, tvalues, _, dof_global = gather_local_stats(X1, y)
+    params, _, tvalues, rsquared, dof_global = gather_local_stats(X1, y)
 
     pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
 
@@ -97,6 +98,7 @@ def local_stats_to_dict_numba(args, X, y):
 
     print_pvals(args, pvalues.T, tvalues.T, X_labels)
     print_beta_images(args, beta_vector, X_labels)
+    print_r2_image(args, rsquared)
 
     local_stats_list = encode_png(args)
 
