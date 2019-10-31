@@ -8,9 +8,8 @@ import os
 import sys
 import warnings
 
-import numpy as np
 import ujson as json
-
+from ancillary import loadBin, saveBin
 from local_ancillary import (add_site_covariates, from_csv,
                              local_stats_to_dict_numba, mean_and_len_y,
                              multiply, stats_calculation, to_csv, vbm_parser)
@@ -18,7 +17,6 @@ from nipype_utils import average_nifti
 from parsers import parse_for_categorical
 from rw_utils import write_file
 from utils import list_recursive
-from ancillary import saveBin, loadBin
 
 warnings.simplefilter("ignore")
 

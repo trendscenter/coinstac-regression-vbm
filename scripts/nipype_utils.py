@@ -7,10 +7,10 @@ Created on Wed Jul 24 21:01:15 2019
 """
 import os
 
-import nibabel as nib
 import numpy as np
-from nilearn.image import resample_img, resample_to_img
 
+import nibabel as nib
+from nilearn.image import resample_img, resample_to_img
 from parsers import parse_covar_info
 
 MASK = 'mask.nii'
