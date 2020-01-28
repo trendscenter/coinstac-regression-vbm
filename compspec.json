@@ -1,41 +1,93 @@
 {
   "meta": {
-    "name": "Decentralized Regression for VBM",
+    "name": "Regression - VBM",
     "id": "regression-vbm",
     "version": "v1.0.0",
-    "repository": "https:\/\/github.com\/hvgazula\/coinstac-regression-vbm",
-    "description": "Decentralized regression (normal equation) for VBM"
+    "repository": "https:\/\/github.com\/trendscenter\/coinstac-regression-vbm",
+    "description": "Decentralized Regression for Voxel-based Morphometry"
   },
   "computation": {
     "type": "docker",
-    "dockerImage": "regression-vbm",
+    "dockerImage": "coinstacteam/regression-vbm",
     "command": [
       "python",
       "\/computation\/scripts\/local.py"
     ],
     "remote": {
       "type": "docker",
-      "dockerImage": "regression-vbm",
+      "dockerImage": "coinstacteam/regression-vbm",
       "command": [
         "python",
         "\/computation\/scripts\/remote.py"
       ]
     },
     "input": {
-      "covariates": {
-        "type": "array"
+      "lambda":
+      {
+        "defaultValue": 0,
+        "label": "Lambda",
+        "max": 1,
+        "min": 0,
+        "step": 0.05,
+        "type": "number",
+        "source": "owner"
       },
-      "dependents": {
-        "type": "array"
+      "threshold":
+      {
+        "defaultValue": 0.2,
+        "label": "Masking threshold",
+        "max": 1,
+        "min": 0,
+        "type": "number",
+        "source": "owner"
       },
-      "lambda": {
-        "type": "number"
+      "voxel_size":
+      {
+        "defaultValue": 4,
+        "label": "Voxel Size",
+        "max": 6,
+        "min": 0,
+        "step": 0.5,
+        "type": "number",
+        "source": "owner"
+      },
+      "covariates":
+      {
+        "label": "Covariates",
+        "type": "array",
+        "items": ["boolean", "number", "string"]
+      },
+      "data": {
+        "label": "Data",
+        "type": "array",
+        "items": ["NIfTI"],
+        "extensions": [["csv", "txt"]]
       }
     },
     "output": {
-      "Beta": {
+      "avg_beta_vector": {
+        "label": "Avg Beta Vector",
+        "type": "array"
+      },
+      "r_2_global": {
+        "label": "R2 Global",
+        "type": "number"
+      },
+      "ts_global": {
+        "label": "TS Global",
+        "type": "array"
+      },
+      "ps_global": {
+        "label": "PS Global",
+        "type": "number"
+      },
+      "dof_global": {
+        "label": "DOF Global",
         "type": "array"
       }
+    },
+    "display": {
+      "type": "images"
     }
   }
 }
