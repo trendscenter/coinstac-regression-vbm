@@ -8,14 +8,14 @@
   },
   "computation": {
     "type": "docker",
-    "dockerImage": "regression-vbm",
+    "dockerImage": "coinstacteam/regression-vbm",
     "command": [
       "python",
       "\/computation\/scripts\/local.py"
     ],
     "remote": {
       "type": "docker",
-      "dockerImage": "regression-vbm",
+      "dockerImage": "coinstacteam/regression-vbm",
       "command": [
         "python",
         "\/computation\/scripts\/remote.py"
@@ -24,7 +24,7 @@
     "input": {
       "lambda":
       {
-        "defaultValue": 0,
+        "default": 0,
         "label": "Lambda",
         "max": 1,
         "min": 0,
@@ -34,7 +34,7 @@
       },
       "threshold":
       {
-        "defaultValue": 0.2,
+        "default": 0.2,
         "label": "Masking threshold",
         "max": 1,
         "min": 0,
@@ -43,7 +43,7 @@
       },
       "voxel_size":
       {
-        "defaultValue": 4,
+        "default": 4,
         "label": "Voxel Size",
         "max": 6,
         "min": 0,
@@ -51,17 +51,18 @@
         "type": "number",
         "source": "owner"
       },
-      "covariates":
-      {
+      "covariates": {
         "label": "Covariates",
-        "type": "array",
-        "items": ["boolean", "number", "string"]
+        "type": "csv",
+        "items": ["boolean", "number", "string"],
+        "source": "member"
       },
       "data": {
         "label": "Data",
-        "type": "array",
-        "items": ["NIfTI"],
-        "extensions": [["csv", "txt"]]
+        "type": "freesurfer",
+        "items": ["FreeSurfer"],
+        "extensions": ["csv", "txt"],
+        "source": "owner"
       }
     },
     "output": {
