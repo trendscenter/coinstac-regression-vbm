@@ -11,7 +11,9 @@ import warnings
 import numpy as np
 import pandas as pd
 
-import ujson as json
+import simplejson as json
+import jsonpickle
+
 from ancillary import (encode_png, loadBin, print_beta_images, print_pvals,
                        print_r2_image, saveBin)
 from nipype_utils import calculate_mask
@@ -37,9 +39,11 @@ def remote_0(args):
     df = pd.DataFrame.from_dict(site_info)
     covar_keys, unique_count = return_uniques_and_counts(df)
 
+    #raise Exception(covar_keys, unique_count)
+
     computation_output_dict = {
         "output": {
-            "covar_keys": covar_keys,
+            "covar_keys": jsonpickle.encode(covar_keys, unpicklable=False),
             "global_unique_count": unique_count,
             "mask": 'mask.nii',
             "computation_phase": "remote_0"

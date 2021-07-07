@@ -7,7 +7,7 @@ Created on Sat Jul 13 20:00:26 2019
 """
 import os
 
-import ujson as json
+import simplejson as json
 
 
 def return_file(spec, location, file_name):

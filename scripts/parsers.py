@@ -92,14 +92,21 @@ def parse_covar_info(args):
     state_ = args["state"]
     covar_info = input_["covariates"]
 
+
+    covar_df = pd.DataFrame.from_dict(covar_info).T
+
+    covar_data = covar_df.index
+    covar_labels = covar_df.columns
+    covar_types = covar_df.iloc[[2]]
+
     # Reading in the inpuspec.json
-    covar_data = covar_info[0][0]
-    covar_labels = covar_info[1]
-    covar_types = covar_info[2]
+    # covar_data = covar_info[0][0]
+    # covar_labels = covar_info[1]
+    # covar_types = covar_info[2]
 
     # Converting the contents to a dataframe
-    covar_df = pd.DataFrame(covar_data[1:], columns=covar_data[0])
-    covar_df.set_index(covar_df.columns[0], inplace=True)
+    #covar_df = pd.DataFrame(covar_data[1:], columns=covar_data[0])
+    #covar_df.set_index(covar_df.columns[0], inplace=True)
 
     # Selecting only the columns sepcified in the UI
     # TODO: This could be redundant (check with Ross)
@@ -121,7 +128,7 @@ def parse_covar_info(args):
 
     # convert contents of object columns to lowercase
     for column in covar_info.select_dtypes(object):
-        covar_info[column] = covar_info[column].str.lower()
+        covar_info[column] = covar_info[column].astype('str').str.lower()
 
     return covar_info, covar_types
 

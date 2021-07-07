@@ -8,7 +8,7 @@ import os
 import sys
 import warnings
 
-import ujson as json
+import simplejson as json
 from ancillary import loadBin, saveBin
 from local_ancillary import (add_site_covariates, from_csv,
                              local_stats_to_dict_numba, mean_and_len_y,
@@ -149,13 +149,14 @@ def local_2(args):
 
     #    avg_beta_vector = input_["avg_beta_vector"]
     #    mean_y_global = input_["mean_y_global"]
+    MEAN_Y_GLOBAL_FILE = '/computation/assets/mean_y_global.npy'
 
     avg_beta_vector = loadBin(
         os.path.join(args["state"]["baseDirectory"],
                      input_["avg_beta_vector"]))
 
     mean_y_global = loadBin(
-        os.path.join(args["state"]["baseDirectory"], input_["mean_y_global"]))
+        os.path.join(args["state"]["baseDirectory"], MEAN_Y_GLOBAL_FILE))
 
     varX_matrix_local = multiply(biased_X, biased_X)
 

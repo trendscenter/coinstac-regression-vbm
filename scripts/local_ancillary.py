@@ -9,6 +9,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import simplejson as json
 from numba import jit, prange
 
 import scipy as sp
@@ -164,6 +165,9 @@ def add_site_covariates(args, X):
     input_ = args["input"]
     all_sites = input_["covar_keys"]
     glob_uniq_ct = input_["global_unique_count"]
+
+
+    all_sites = json.loads(all_sites)
 
     for key, val in glob_uniq_ct.items():
         if val == 1:
