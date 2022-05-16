@@ -5,6 +5,7 @@ This script includes the remote computations for decentralized
 regression with decentralized statistic calculation
 """
 import os
+import shutil
 import sys
 import warnings
 
@@ -233,10 +234,17 @@ def remote_2(args):
 
     # Block of code to print just global stats
     global_dict_list = encode_png(args)
+    allfiles = os.listdir(state_["outputDirectory"])
+    os.mkdir( os.path.join(state_["transferDirectory"], "global_stats"))
+    for f in allfiles:
+      shutil.move(
+        os.path.join(state_["outputDirectory"], f),
+        os.path.join(state_["transferDirectory"], "global_stats", f))
 
     # Print Everything
     keys2 = ["global_stats", "local_stats"]
-    output_dict = dict(zip(keys2, [global_dict_list, all_local_stats_dicts]))
+    global_stats_files = ["global_stats/" + f for f in list(global_dict_list.keys())]
+    output_dict = { "local_stats": list(global_dict_list.keys()), "global_stats": global_stats_files }
 
     computation_output_dict = {"output": output_dict, "success": True}
 
