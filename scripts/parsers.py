@@ -93,7 +93,8 @@ def parse_covar_info(args):
     covar_info = input_["covariates"]
 
 
-    covar_df = pd.DataFrame.from_dict(covar_info).T
+    covar_orig_df = pd.DataFrame.from_dict(covar_info).T
+    covar_df = covar_orig_df.apply(pd.to_numeric, errors='ignore')
 
     covar_data = covar_df.index
     covar_labels = covar_df.columns
