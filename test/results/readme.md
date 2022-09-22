@@ -6,7 +6,7 @@ This was a 2 site run in COINSTAC UI with a pipeline set up to reflect the setti
 
 #### Results Info
 
-The results can be downloaded as a csv file from COINSTAC UI: [View files](https://mygsu-my.sharepoint.com/:f:/r/personal/jromero7_gsu_edu/Documents/vbm_regression_results?csf=1&web=1&e=1MFe8K)
+The results can be downloaded as a csv file from COINSTAC UI: [View files](https://mygsu-my.sharepoint.com/:f:/g/personal/jromero7_gsu_edu/EjraWHDLWqpOo5hwoTe3O84BspfKwfG-gMKqbtVgSF7txA?e=exI8JW)
 
 Here is an animated gif of the generated results: 
 
