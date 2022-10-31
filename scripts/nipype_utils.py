@@ -11,7 +11,7 @@ import numpy as np
 
 import nibabel as nib
 from nilearn.image import resample_img, resample_to_img
-from parsers import parse_covar_info
+from scripts.parsers import parse_covar_info
 
 MASK = '/computation/assets/mask.nii'
 MNI_TEMPLATE = '/computation/assets/MNI152_T1_1mm_brain.nii'
@@ -63,7 +63,11 @@ def average_nifti(args):
 
     appended_data = 0
     for image in covar_x.index:
-        image_data = nib.load(os.path.join(input_dir, image)).dataobj[:]
+        try:
+            image_data = nib.load(os.path.join(input_dir, image)).dataobj[:]
+        except Exception as e:
+             files = os.listdir(input_dir)
+             raise Exception(files)
         if np.all(np.isnan(image_data)) or np.count_nonzero(
                 image_data) == 0 or image_data.size == 0:
             covar_x = covar_x.drop(index=image)

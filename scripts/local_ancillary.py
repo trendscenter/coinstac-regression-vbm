@@ -13,10 +13,10 @@ import simplejson as json
 from numba import jit, prange
 
 import scipy as sp
-from ancillary import (encode_png, print_beta_images, print_pvals,
+from scripts.ancillary import (encode_png, print_beta_images, print_pvals,
                        print_r2_image)
-from nipype_utils import nifti_to_data
-from parsers import perform_encoding
+from scripts.nipype_utils import nifti_to_data
+from scripts.parsers import perform_encoding
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")

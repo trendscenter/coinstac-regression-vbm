@@ -9,14 +9,14 @@ import sys
 import warnings
 
 import simplejson as json
-from ancillary import loadBin, saveBin
-from local_ancillary import (add_site_covariates, from_csv,
+from scripts.ancillary import loadBin, saveBin
+from scripts.local_ancillary import (add_site_covariates, from_csv,
                              local_stats_to_dict_numba, mean_and_len_y,
                              multiply, stats_calculation, to_csv, vbm_parser)
-from nipype_utils import average_nifti
-from parsers import parse_for_categorical
-from rw_utils import write_file
-from utils import list_recursive
+from scripts.nipype_utils import average_nifti
+from scripts.parsers import parse_for_categorical
+from scripts.rw_utils import write_file
+from scripts.utils import list_recursive
 
 warnings.simplefilter("ignore")
 
@@ -54,7 +54,7 @@ def local_0(args):
 
     computation_output_dict = {"output": output_dict, "cache": cache_dict}
 
-    return json.dumps(computation_output_dict)
+    return computation_output_dict
 
 
 def local_1(args):
@@ -109,7 +109,7 @@ def local_1(args):
         "cache": cache_dict,
     }
 
-    return json.dumps(computation_output_dict)
+    return computation_output_dict
 
 
 def local_2(args):
@@ -175,19 +175,17 @@ def local_2(args):
     cache_dict = {}
     computation_output_dict = {"output": output_dict, "cache": cache_dict}
 
-    return json.dumps(computation_output_dict)
+    return computation_output_dict
 
 
-if __name__ == '__main__':
-
-    PARAM_DICT = json.loads(sys.stdin.read())
+def start(PARAM_DICT):
     PHASE_KEY = list(list_recursive(PARAM_DICT, 'computation_phase'))
 
     if not PHASE_KEY:
-        sys.stdout.write(local_0(PARAM_DICT))
+        return local_0(PARAM_DICT)
     elif "remote_0" in PHASE_KEY:
-        sys.stdout.write(local_1(PARAM_DICT))
+        return local_1(PARAM_DICT)
     elif "remote_1" in PHASE_KEY:
-        sys.stdout.write(local_2(PARAM_DICT))
+        return local_2(PARAM_DICT)
     else:
         raise ValueError("Error occurred at Local")

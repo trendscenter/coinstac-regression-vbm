@@ -17,3 +17,4 @@ six
 statsmodels
 simplejson
 jsonpickle
+coinstac==0.3.3b0

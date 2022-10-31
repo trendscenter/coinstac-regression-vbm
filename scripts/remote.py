@@ -15,13 +15,13 @@ import pandas as pd
 import simplejson as json
 import jsonpickle
 
-from ancillary import (encode_png, loadBin, print_beta_images, print_pvals,
+from scripts.ancillary import (encode_png, loadBin, print_beta_images, print_pvals,
                        print_r2_image, saveBin)
-from nipype_utils import calculate_mask
-from remote_ancillary import remote_stats, return_uniques_and_counts
-from rw_utils import read_file
+from scripts.nipype_utils import calculate_mask
+from scripts.remote_ancillary import remote_stats, return_uniques_and_counts
+from scripts.rw_utils import read_file
 from scipy import stats
-from utils import list_recursive
+from scripts.utils import list_recursive
 
 warnings.simplefilter("ignore")
 OUTPUT_FROM_LOCAL = 'local_output'
@@ -52,7 +52,7 @@ def remote_0(args):
         "cache": {}
     }
 
-    return json.dumps(computation_output_dict)
+    return computation_output_dict
 
 
 def remote_1(args):
@@ -140,7 +140,7 @@ def remote_1(args):
     with open(file_name, 'w') as file_h:
         input_list[site] = json.dump(cache_dict, file_h)
 
-    return json.dumps(computation_output_dict)
+    return computation_output_dict
 
 
 def remote_2(args):
@@ -248,19 +248,17 @@ def remote_2(args):
 
     computation_output_dict = {"output": output_dict, "success": True}
 
-    return json.dumps(computation_output_dict)
+    return computation_output_dict
 
 
-if __name__ == '__main__':
-
-    PARAM_DICT = json.loads(sys.stdin.read())
+def start(PARAM_DICT):
     PHASE_KEY = list(list_recursive(PARAM_DICT, 'computation_phase'))
 
     if "local_0" in PHASE_KEY:
-        sys.stdout.write(remote_0(PARAM_DICT))
+        return remote_0(PARAM_DICT)
     elif "local_1" in PHASE_KEY:
-        sys.stdout.write(remote_1(PARAM_DICT))
+        return remote_1(PARAM_DICT)
     elif "local_2" in PHASE_KEY:
-        sys.stdout.write(remote_2(PARAM_DICT))
+        return remote_2(PARAM_DICT)
     else:
         raise ValueError("Error occurred at Remote")

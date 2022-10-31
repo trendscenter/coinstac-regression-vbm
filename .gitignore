@@ -2,8 +2,9 @@ __pycache__
 .DS_Store
 test/.DS_Store
 test/output
-test/remote
+test/input/remote
 test/transfer
+test/system
 test/cache
 **/mask.nii
 **/mni_downsampled.nii
