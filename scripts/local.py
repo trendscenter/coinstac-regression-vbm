@@ -8,11 +8,12 @@ import os
 import sys
 import warnings
 
+import pandas as pd
 import simplejson as json
 from scripts.ancillary import loadBin, saveBin
-from scripts.local_ancillary import (add_site_covariates, from_csv,
+from scripts.local_ancillary import (add_site_covariates,
                              local_stats_to_dict_numba, mean_and_len_y,
-                             multiply, stats_calculation, to_csv, vbm_parser)
+                             multiply, stats_calculation, vbm_parser)
 from scripts.nipype_utils import average_nifti
 from scripts.parsers import parse_for_categorical
 from scripts.rw_utils import write_file
@@ -37,7 +38,7 @@ def local_0(args):
 
     write_file(args, args, 'cache', 'args_file')
 
-    to_csv(covar_x, os.path.join(cache_dir, 'X_df'))
+    covar_x.to_parquet(os.path.join(cache_dir, 'X_df'))
 
     output_dict = {
         "categorical_dict": categorical_dict,
@@ -65,7 +66,7 @@ def local_1(args):
     output_dir = state_["transferDirectory"]
     cache_dir = state_["cacheDirectory"]
 
-    X = from_csv(os.path.join(cache_dir, cache_['covariates']))
+    X = pd.read_parquet(os.path.join(cache_dir, cache_['covariates']))
     regularizer_l2 = cache_['lambda']
 
     # Local Statistics
