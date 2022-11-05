@@ -13,9 +13,8 @@ import nibabel as nib
 from nilearn.image import resample_img, resample_to_img
 from scripts.parsers import parse_covar_info
 
-MASK = '/computation/assets/mask.nii'
+MASK = 'mask.nii'
 MNI_TEMPLATE = '/computation/assets/MNI152_T1_1mm_brain.nii'
-MNI_DOWN = '/computation/assets/mni_downsampled.nii'
 
 
 def nifti_to_data(args, X):
@@ -30,7 +29,7 @@ def nifti_to_data(args, X):
         raise Exception("Missing Mask at " + args["state"]["clientId"])
 
     mni_image = os.path.join(args["state"]["baseDirectory"],
-                             MNI_DOWN)
+                             'mni_downsampled.nii')
 
     y = np.zeros((len(X.index), np.count_nonzero(mask_data)), dtype='f8')
     for index, image in enumerate(X.index):
@@ -116,7 +115,7 @@ def calculate_mask(args):
     affine = principal_image.affine
 
     clipped_img = nib.Nifti1Image(mask_info, affine, header)
-    mni_image = os.path.join('/computation/assets', MNI_TEMPLATE)
+    mni_image = MNI_TEMPLATE
 
     reoriented_mni = resample_to_img(mni_image,
                                      clipped_img,

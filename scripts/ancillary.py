@@ -16,7 +16,7 @@ from nilearn import plotting
 
 np.seterr(divide='ignore')
 
-MASK = '/computation/assets/mask.nii'
+MASK = 'mask.nii'
 
 
 def saveBin(path, arr):

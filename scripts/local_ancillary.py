@@ -23,20 +23,6 @@ with warnings.catch_warnings():
     import statsmodels.api as sm
 
 
-# def to_csv(df, path):
-#     b = pd.Series(df.dtypes, name='data_types')
-#     df = df.append(b)
-#     df.to_csv(path)
-
-
-# def from_csv(path):
-#     df = pd.read_csv(path, index_col=0)
-#     type_dict = df.iloc[-1].to_dict()
-#     df = df.drop(df.tail(1).index)
-#     df = df.astype(type_dict)
-#     return df
-
-
 def mean_and_len_y(y):
     """Caculate the mean and length of each y vector
     """

@@ -33,6 +33,10 @@ def local_0(args):
     voxel_size = input_["voxel_size"]
     lamb = args['input']['lambda']
 
+    # TODO: voxel size cannot be 0 (check how to handle this)
+    if voxel_size == 0:
+        voxel_size = 1
+
     categorical_dict = parse_for_categorical(args)
     covar_x = average_nifti(args)
 
@@ -148,16 +152,12 @@ def local_2(args):
     biased_X = loadBin(os.path.join(cache_dir, cache_["covariates"]))
     y = loadBin(os.path.join(cache_dir, cache_["dependents"]))
 
-    #    avg_beta_vector = input_["avg_beta_vector"]
-    #    mean_y_global = input_["mean_y_global"]
-    MEAN_Y_GLOBAL_FILE = '/computation/assets/mean_y_global.npy'
-
     avg_beta_vector = loadBin(
         os.path.join(args["state"]["baseDirectory"],
                      input_["avg_beta_vector"]))
 
     mean_y_global = loadBin(
-        os.path.join(args["state"]["baseDirectory"], MEAN_Y_GLOBAL_FILE))
+        os.path.join(args["state"]["baseDirectory"], input_['mean_y_global']))
 
     varX_matrix_local = multiply(biased_X, biased_X)
 
