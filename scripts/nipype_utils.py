@@ -59,7 +59,7 @@ def average_nifti(args):
     input_dir = state_["baseDirectory"]
     output_dir = state_["transferDirectory"]
 
-    covar_x, _ = parse_covar_info(args)
+    covar_x = parse_covar_info(args)
 
     appended_data = 0
     for image in covar_x.index:

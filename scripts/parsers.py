@@ -92,25 +92,7 @@ def parse_covar_info(args):
     state_ = args["state"]
     covar_info = input_["covariates"]
 
-
-    covar_df = pd.DataFrame.from_dict(covar_info).T
-
-    covar_data = covar_df.index
-    covar_labels = covar_df.columns
-    covar_types = covar_df.iloc[[2]]
-
-    # Reading in the inpuspec.json
-    # covar_data = covar_info[0][0]
-    # covar_labels = covar_info[1]
-    # covar_types = covar_info[2]
-
-    # Converting the contents to a dataframe
-    #covar_df = pd.DataFrame(covar_data[1:], columns=covar_data[0])
-    #covar_df.set_index(covar_df.columns[0], inplace=True)
-
-    # Selecting only the columns sepcified in the UI
-    # TODO: This could be redundant (check with Ross)
-    covar_info = covar_df[covar_labels]
+    covar_info = pd.DataFrame.from_dict(covar_info, orient='index')
 
     # convert bool to categorical as soon as possible
     for column in covar_info.select_dtypes(bool):
@@ -130,13 +112,13 @@ def parse_covar_info(args):
     for column in covar_info.select_dtypes(object):
         covar_info[column] = covar_info[column].astype('str').str.lower()
 
-    return covar_info, covar_types
+    return covar_info
 
 
 def parse_for_categorical(args):
     """Return unique subsites as a dictionary
     """
-    X, _ = parse_covar_info(args)
+    X = parse_covar_info(args)
 
     site_dict1 = {
         col: list(X[col].unique())
