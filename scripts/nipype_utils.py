@@ -60,11 +60,7 @@ def average_nifti(args):
 
     appended_data = 0
     for image in covar_x.index:
-        try:
-            image_data = nib.load(os.path.join(input_dir, image)).dataobj[:]
-        except Exception as e:
-            files = os.listdir(input_dir)
-            raise Exception(files)
+        image_data = nib.load(os.path.join(input_dir, image)).dataobj[:]
         if (
             np.all(np.isnan(image_data))
             or np.count_nonzero(image_data) == 0
@@ -75,8 +71,7 @@ def average_nifti(args):
             appended_data += image_data
 
     sample_image = nib.load(os.path.join(input_dir, covar_x.index[0]))
-    header = sample_image.header
-    affine = sample_image.affine
+    header, affine = sample_image.header, sample_image.affine
 
     avg_nifti = appended_data / len(covar_x.index)
 
@@ -115,13 +110,11 @@ def calculate_mask(args):
     principal_image = nib.load(
         os.path.join(input_dir, user_id, input_[user_id]["avg_nifti"])
     )
-    header = principal_image.header
-    affine = principal_image.affine
+    header, affine = principal_image.header, principal_image.affine
 
     clipped_img = nib.Nifti1Image(mask_info, affine, header)
-    mni_image = MNI_TEMPLATE
 
-    reoriented_mni = resample_to_img(mni_image, clipped_img, interpolation="linear")
+    reoriented_mni = resample_to_img(MNI_TEMPLATE, clipped_img, interpolation="linear")
     downsampled_mni = resample_img(
         reoriented_mni, target_affine=np.eye(3) * voxel_size, interpolation="linear"
     )
@@ -130,12 +123,7 @@ def calculate_mask(args):
         clipped_img, downsampled_mni, interpolation="nearest"
     )
 
-    output_file1 = os.path.join(output_dir, "mask.nii")
-    output_file2 = os.path.join(cache_dir, "mask.nii")
-    output_file3 = os.path.join(output_dir, "mni_downsampled.nii")
-    output_file4 = os.path.join(cache_dir, "mni_downsampled.nii")
-
-    nib.save(downsampled_mask, output_file1)
-    nib.save(downsampled_mask, output_file2)
-    nib.save(downsampled_mni, output_file3)
-    nib.save(downsampled_mni, output_file4)
+    nib.save(downsampled_mask, os.path.join(output_dir, "mask.nii"))
+    nib.save(downsampled_mask, os.path.join(cache_dir, "mask.nii"))
+    nib.save(downsampled_mni, os.path.join(output_dir, "mni_downsampled.nii"))
+    nib.save(downsampled_mni, os.path.join(cache_dir, "mni_downsampled.nii"))
