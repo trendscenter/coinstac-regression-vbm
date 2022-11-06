@@ -15,8 +15,14 @@ import pandas as pd
 import simplejson as json
 import jsonpickle
 
-from scripts.ancillary import (encode_png, loadBin, print_beta_images, print_pvals,
-                       print_r2_image, saveBin)
+from scripts.ancillary import (
+    encode_png,
+    loadBin,
+    print_beta_images,
+    print_pvals,
+    print_r2_image,
+    saveBin,
+)
 from scripts.nipype_utils import calculate_mask
 from scripts.remote_ancillary import remote_stats, return_uniques_and_counts
 from scripts.rw_utils import read_file
@@ -24,40 +30,35 @@ from scipy import stats
 from scripts.utils import list_recursive
 
 warnings.simplefilter("ignore")
-OUTPUT_FROM_LOCAL = 'local_output'
+OUTPUT_FROM_LOCAL = "local_output"
 
 
 def remote_0(args):
-    """The first function in the remote computation chain
-    """
+    """The first function in the remote computation chain"""
     calculate_mask(args)
     input_ = args["input"]
-    site_info = {
-        site: input_[site]['categorical_dict']
-        for site in input_.keys()
-    }
+    site_info = {site: input_[site]["categorical_dict"] for site in input_.keys()}
 
     df = pd.DataFrame.from_dict(site_info)
     covar_keys, unique_count = return_uniques_and_counts(df)
 
-    #raise Exception(covar_keys, unique_count)
+    # raise Exception(covar_keys, unique_count)
 
     computation_output_dict = {
         "output": {
             "covar_keys": jsonpickle.encode(covar_keys, unpicklable=False),
             "global_unique_count": unique_count,
-            "mask": 'mask.nii',
-            "computation_phase": "remote_0"
+            "mask": "mask.nii",
+            "computation_phase": "remote_0",
         },
-        "cache": {}
+        "cache": {},
     }
 
     return computation_output_dict
 
 
 def remote_1(args):
-    """ The second function in the local computation chain
-    """
+    """The second function in the local computation chain"""
     input_ = args["input"]
     state_ = args["state"]
     input_dir = state_["baseDirectory"]
@@ -78,66 +79,69 @@ def remote_1(args):
         input_list[site]["local_stats_list"] for site in input_list
     ]
 
-    beta_vector_0 = sum([
-        loadBin(
-            os.path.join(input_dir, site,
-                         input_list[site]["XtransposeX_local"]))
-        for site in input_list
-    ])
+    beta_vector_0 = sum(
+        [
+            loadBin(
+                os.path.join(input_dir, site, input_list[site]["XtransposeX_local"])
+            )
+            for site in input_list
+        ]
+    )
 
-    beta_vector_1 = sum([
-        loadBin(
-            os.path.join(input_dir, site,
-                         input_list[site]["Xtransposey_local"]))
-        for site in input_list
-    ])
+    beta_vector_1 = sum(
+        [
+            loadBin(
+                os.path.join(input_dir, site, input_list[site]["Xtransposey_local"])
+            )
+            for site in input_list
+        ]
+    )
 
     all_lambdas = [input_list[site]["lambda"] for site in input_list]
 
     if np.unique(all_lambdas).shape[0] != 1:
         raise Exception("Unequal lambdas at local sites")
 
-    avg_beta_vector = np.transpose(
-        np.dot(np.linalg.inv(beta_vector_0), beta_vector_1))
+    avg_beta_vector = np.transpose(np.dot(np.linalg.inv(beta_vector_0), beta_vector_1))
 
     mean_y_local = [input_list[site]["mean_y_local"] for site in input_list]
-    count_y_local = [
-        np.array(input_list[site]["count_local"]) for site in input_list
-    ]
+    count_y_local = [np.array(input_list[site]["count_local"]) for site in input_list]
     mean_y_global = np.array(mean_y_local) * np.array(count_y_local)
-    mean_y_global = np.sum(mean_y_global, axis=0) / np.sum(count_y_local,
-                                                           axis=0)
+    mean_y_global = np.sum(mean_y_global, axis=0) / np.sum(count_y_local, axis=0)
 
     dof_global = sum(count_y_local) - avg_beta_vector.shape[1]
 
     saveBin(
-        os.path.join(args["state"]["transferDirectory"],
-                     'avg_beta_vector.npy'), avg_beta_vector)
+        os.path.join(args["state"]["transferDirectory"], "avg_beta_vector.npy"),
+        avg_beta_vector,
+    )
     saveBin(
-        os.path.join(args["state"]["transferDirectory"], 'mean_y_global.npy'),
-        mean_y_global)
+        os.path.join(args["state"]["transferDirectory"], "mean_y_global.npy"),
+        mean_y_global,
+    )
 
     saveBin(
-        os.path.join(args["state"]["cacheDirectory"], 'avg_beta_vector.npy'),
-        avg_beta_vector)
+        os.path.join(args["state"]["cacheDirectory"], "avg_beta_vector.npy"),
+        avg_beta_vector,
+    )
 
     output_dict = {
-        "avg_beta_vector": 'avg_beta_vector.npy',
-        "mean_y_global": 'mean_y_global.npy',
-        "computation_phase": "remote_1"
+        "avg_beta_vector": "avg_beta_vector.npy",
+        "mean_y_global": "mean_y_global.npy",
+        "computation_phase": "remote_1",
     }
 
     cache_dict = {
-        "avg_beta_vector": 'avg_beta_vector.npy',
+        "avg_beta_vector": "avg_beta_vector.npy",
         "dof_global": dof_global.tolist(),
         "X_labels": X_labels,
-        "local_stats_dict": all_local_stats_dicts
+        "local_stats_dict": all_local_stats_dicts,
     }
 
     computation_output_dict = {"output": output_dict, "cache": cache_dict}
 
-    file_name = os.path.join(cache_dir, 'remote_cache')
-    with open(file_name, 'w') as file_h:
+    file_name = os.path.join(cache_dir, "remote_cache")
+    with open(file_name, "w") as file_h:
         input_list[site] = json.dump(cache_dict, file_h)
 
     return computation_output_dict
@@ -192,33 +196,28 @@ def remote_2(args):
     site_list = args["input"].keys()
     for site in site_list:
         file_name = os.path.join(input_dir, site, OUTPUT_FROM_LOCAL)
-        with open(file_name, 'r') as file_h:
+        with open(file_name, "r") as file_h:
             input_list[site] = json.load(file_h)
 
-    cache_list = read_file(args, "cache", 'remote_cache')
+    cache_list = read_file(args, "cache", "remote_cache")
 
     X_labels = args["cache"]["X_labels"]
 
     all_local_stats_dicts = cache_["local_stats_dict"]
 
-    avg_beta_vector = loadBin(
-        os.path.join(cache_dir, cache_list["avg_beta_vector"]))
+    avg_beta_vector = loadBin(os.path.join(cache_dir, cache_list["avg_beta_vector"]))
     dof_global = cache_list["dof_global"]
 
-    SSE_global = sum(
-        [np.array(input_list[site]["SSE_local"]) for site in input_list])
-    SST_global = sum(
-        [np.array(input_list[site]["SST_local"]) for site in input_list])
-    varX_matrix_global = sum([
-        np.array(input_list[site]["varX_matrix_local"]) for site in input_list
-    ])
+    SSE_global = sum([np.array(input_list[site]["SSE_local"]) for site in input_list])
+    SST_global = sum([np.array(input_list[site]["SST_local"]) for site in input_list])
+    varX_matrix_global = sum(
+        [np.array(input_list[site]["varX_matrix_local"]) for site in input_list]
+    )
 
     r_squared_global = 1 - (SSE_global / SST_global)
     MSE = SSE_global / np.array(dof_global)
     ts_global = remote_stats(MSE, varX_matrix_global, avg_beta_vector)
-    ps_global = [
-        2 * stats.t.sf(np.abs(t), df) for t, df in zip(ts_global, dof_global)
-    ]
+    ps_global = [2 * stats.t.sf(np.abs(t), df) for t, df in zip(ts_global, dof_global)]
 
     print_pvals(args, ps_global, ts_global, X_labels)
     print_beta_images(args, avg_beta_vector, X_labels)
@@ -235,18 +234,24 @@ def remote_2(args):
     # move global stats to transfer directory to be moved to local sites
     os.mkdir(os.path.join(state_["transferDirectory"], "global_stats"))
     for f in global_files:
-      shutil.move(
-        os.path.join(state_["outputDirectory"], f),
-        os.path.join(state_["transferDirectory"], "global_stats", f))
+        shutil.move(
+            os.path.join(state_["outputDirectory"], f),
+            os.path.join(state_["transferDirectory"], "global_stats", f),
+        )
 
     # Get list of global pngs files
-    global_png_files = [f"global_stats/{file}" for file in global_files if file.endswith('.png')]
+    global_png_files = [
+        f"global_stats/{file}" for file in global_files if file.endswith(".png")
+    ]
 
     # Get list of local png files
-    local_png_files = {site: [file for file in site_files if file.endswith('.png')] for site, site_files in all_local_stats_dicts.items()}
+    local_png_files = {
+        site: [file for file in site_files if file.endswith(".png")]
+        for site, site_files in all_local_stats_dicts.items()
+    }
 
     # Gather local and global png files (for display in UI)
-    output_dict = { "local_stats": local_png_files, "global_stats": global_png_files }
+    output_dict = {"local_stats": local_png_files, "global_stats": global_png_files}
 
     computation_output_dict = {"output": output_dict, "success": True}
 
@@ -254,7 +259,7 @@ def remote_2(args):
 
 
 def start(PARAM_DICT):
-    PHASE_KEY = list(list_recursive(PARAM_DICT, 'computation_phase'))
+    PHASE_KEY = list(list_recursive(PARAM_DICT, "computation_phase"))
 
     if "local_0" in PHASE_KEY:
         return remote_0(PARAM_DICT)

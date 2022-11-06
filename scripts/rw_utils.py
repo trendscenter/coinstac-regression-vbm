@@ -23,23 +23,21 @@ def return_file(spec, location, file_name):
 
 
 def write_file(spec, contents=None, location=None, file_name=None):
-    """Write contents to a file
-    """
+    """Write contents to a file"""
     args_file = return_file(spec, location, file_name)
 
     if contents is None:
         contents = spec
 
-    with open(args_file, 'w') as file_h:
+    with open(args_file, "w") as file_h:
         json.dump(contents, file_h)
 
 
 def read_file(spec, location, file_name):
-    """Read contents from a file
-    """
+    """Read contents from a file"""
     args_file = return_file(spec, location, file_name)
 
-    with open(args_file, 'r') as file_h:
+    with open(args_file, "r") as file_h:
         output = json.load(file_h)
 
     return output

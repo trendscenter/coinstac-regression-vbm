@@ -14,8 +14,7 @@ import simplejson as json
 from numba import jit, prange
 
 import scipy as sp
-from scripts.ancillary import (encode_png, print_beta_images, print_pvals,
-                       print_r2_image)
+from scripts.ancillary import encode_png, print_beta_images, print_pvals, print_r2_image
 from scripts.nipype_utils import nifti_to_data
 from scripts.parsers import perform_encoding
 
@@ -25,8 +24,7 @@ with warnings.catch_warnings():
 
 
 def mean_and_len_y(y):
-    """Caculate the mean and length of each y vector
-    """
+    """Caculate the mean and length of each y vector"""
     meanY_vector = y.mean(axis=0)
     #    lenY_vector = y.count(axis=0)
     lenY_vector = np.count_nonzero(~np.isnan(y), axis=0)
@@ -36,8 +34,7 @@ def mean_and_len_y(y):
 
 @jit(nopython=True)
 def gather_local_stats(X, y):
-    """Calculate local statistics
-    """
+    """Calculate local statistics"""
     size_y = y.shape[1]
 
     params = np.zeros((X.shape[1], size_y))
@@ -52,7 +49,7 @@ def gather_local_stats(X, y):
 
         curr_y_estimate = np.dot(beta_vector, X.T)
 
-        SSE_global = np.linalg.norm(curr_y - curr_y_estimate)**2
+        SSE_global = np.linalg.norm(curr_y - curr_y_estimate) ** 2
         SST_global = np.sum(np.square(curr_y - np.mean(curr_y)))
 
         sse[voxel] = SSE_global
@@ -72,11 +69,10 @@ def gather_local_stats(X, y):
 
 
 def local_stats_to_dict_numba(args, X, y):
-    """Wrap local statistics into a dictionary to be sent to the remote
-    """
+    """Wrap local statistics into a dictionary to be sent to the remote"""
     X_labels = list(X.columns)
 
-    X1 = X.values.astype('float64')
+    X1 = X.values.astype("float64")
 
     params, _, tvalues, rsquared, dof_global = gather_local_stats(X1, y)
 
@@ -94,8 +90,7 @@ def local_stats_to_dict_numba(args, X, y):
 
 
 def local_stats_to_dict(X, y):
-    """Calculate local statistics
-    """
+    """Calculate local statistics"""
     y_labels = list(y.columns)
 
     biased_X = X
@@ -122,9 +117,11 @@ def local_stats_to_dict(X, y):
 
     for index, _ in enumerate(y_labels):
         values = [
-            local_params[index].tolist(), local_sse[index],
-            local_pvalues[index].tolist(), local_tvalues[index].tolist(),
-            local_rsquared[index]
+            local_params[index].tolist(),
+            local_sse[index],
+            local_pvalues[index].tolist(),
+            local_tvalues[index].tolist(),
+            local_rsquared[index],
         ]
         local_stats_dict = {key: value for key, value in zip(keys, values)}
         local_stats_list.append(local_stats_dict)
@@ -135,24 +132,21 @@ def local_stats_to_dict(X, y):
 
 
 def merging_globals(args, X, site_covar_dict, dict_, key):
-    """Merge the actual data frame with the created dummy matrix
-    """
+    """Merge the actual data frame with the created dummy matrix"""
     site_covar_dict.rename(index=dict(enumerate(dict_[key])), inplace=True)
     site_covar_dict.index.name = key
     site_covar_dict.reset_index(level=0, inplace=True)
-    X = X.merge(site_covar_dict, on=key, how='left')
+    X = X.merge(site_covar_dict, on=key, how="left")
     X = X.drop(columns=key)
 
     return X
 
 
 def add_site_covariates(args, X):
-    """Add site covariates based on information gathered from all sites
-    """
+    """Add site covariates based on information gathered from all sites"""
     input_ = args["input"]
     all_sites = input_["covar_keys"]
     glob_uniq_ct = input_["global_unique_count"]
-
 
     all_sites = json.loads(all_sites)
 
@@ -160,13 +154,11 @@ def add_site_covariates(args, X):
         if val == 1:
             X.drop(columns=key, inplace=True)
         else:
-            covar_dict = pd.get_dummies(all_sites[key],
-                                        prefix=key,
-                                        drop_first=True)
+            covar_dict = pd.get_dummies(all_sites[key], prefix=key, drop_first=True)
             X = merging_globals(args, X, covar_dict, all_sites, key)
 
-    X = X.dropna(axis=0, how='any')
-    biased_X = sm.add_constant(X, has_constant='add')
+    X = X.dropna(axis=0, how="any")
+    biased_X = sm.add_constant(X, has_constant="add")
 
     return biased_X
 
@@ -190,7 +182,7 @@ def stats_calculation(X, y, avg_beta_vec, mean_y_global):
         mean_y = mean_y_global[voxel]
 
         y1_estimate = np.dot(beta, X.T)
-        sse_local[voxel] = np.linalg.norm(y1 - y1_estimate)**2
+        sse_local[voxel] = np.linalg.norm(y1 - y1_estimate) ** 2
         sst_local[voxel] = np.sum(np.square(y1 - mean_y))
 
     return sse_local, sst_local

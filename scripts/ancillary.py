@@ -14,24 +14,24 @@ import pandas as pd
 import nibabel as nib
 from nilearn import plotting
 
-np.seterr(divide='ignore')
+np.seterr(divide="ignore")
 
-MASK = 'mask.nii'
+MASK = "mask.nii"
 
 
 def saveBin(path, arr):
-    with open(path, 'wb+') as fh:
-        header = '%s' % str(arr.dtype)
+    with open(path, "wb+") as fh:
+        header = "%s" % str(arr.dtype)
         for index in arr.shape:
-            header += ' %d' % index
-        header += '\n'
+            header += " %d" % index
+        header += "\n"
         fh.write(header.encode())
         fh.write(arr.data.tobytes())
         os.fsync(fh)
 
 
 def loadBin(path):
-    with open(path, 'rb') as fh:
+    with open(path, "rb") as fh:
         header = fh.readline().decode().split()
         dtype = header.pop(0)
         arrayDimensions = []
@@ -47,14 +47,13 @@ def encode_png(args):
 
     encoded_png_files = []
     for file in png_files:
-        if file.endswith('.png'):
+        if file.endswith(".png"):
             mrn_image = os.path.join(args["state"]["outputDirectory"], file)
             with open(mrn_image, "rb") as image_file:
                 mrn_image_str = base64.b64encode(image_file.read())
             encoded_png_files.append(mrn_image_str)
 
-    return dict(
-        zip([f for f in png_files if f.endswith('.png')], encoded_png_files))
+    return dict(zip([f for f in png_files if f.endswith(".png")], encoded_png_files))
 
 
 def print_beta_images(args, avg_beta_vector, covar_labels):
@@ -73,17 +72,16 @@ def print_beta_images(args, avg_beta_vector, covar_labels):
         new_data = np.zeros(mask.shape)
         new_data[mask.get_data() > 0] = beta_df[column]
 
-        image_string = 'beta_' + str(column)
+        image_string = "beta_" + str(column)
 
         clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
         output_file = os.path.join(images_folder, image_string)
 
-        nib.save(clipped_img, output_file + '.nii')
+        nib.save(clipped_img, output_file + ".nii")
 
-        plotting.plot_stat_map(clipped_img,
-                               output_file=output_file,
-                               display_mode='ortho',
-                               colorbar=True)
+        plotting.plot_stat_map(
+            clipped_img, output_file=output_file, display_mode="ortho", colorbar=True
+        )
 
 
 def print_pvals(args, ps_global, ts_global, covar_labels):
@@ -101,20 +99,20 @@ def print_pvals(args, ps_global, ts_global, covar_labels):
 
     for column in p_df:
         new_data = np.zeros(mask.shape)
-        new_data[mask.get_data() > 0] = -1 * np.log10(p_df[column]) * np.sign(
-            t_df[column])
+        new_data[mask.get_data() > 0] = (
+            -1 * np.log10(p_df[column]) * np.sign(t_df[column])
+        )
 
-        image_string = 'pval_' + str(column)
+        image_string = "pval_" + str(column)
 
         clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
         output_file = os.path.join(images_folder, image_string)
 
-        nib.save(clipped_img, output_file + '.nii')
+        nib.save(clipped_img, output_file + ".nii")
 
-        plotting.plot_stat_map(clipped_img,
-                               output_file=output_file,
-                               display_mode='ortho',
-                               colorbar=True)
+        plotting.plot_stat_map(
+            clipped_img, output_file=output_file, display_mode="ortho", colorbar=True
+        )
 
 
 def print_r2_image(args, beta_df):
@@ -130,14 +128,13 @@ def print_r2_image(args, beta_df):
     new_data = np.zeros(mask.shape)
     new_data[mask.get_data() > 0] = beta_df
 
-    image_string = 'r_squared'
+    image_string = "r_squared"
 
     clipped_img = nib.Nifti1Image(new_data, mask.affine, mask.header)
     output_file = os.path.join(images_folder, image_string)
 
-    nib.save(clipped_img, output_file + '.nii')
+    nib.save(clipped_img, output_file + ".nii")
 
-    plotting.plot_stat_map(clipped_img,
-                           output_file=output_file,
-                           display_mode='ortho',
-                           colorbar=True)
+    plotting.plot_stat_map(
+        clipped_img, output_file=output_file, display_mode="ortho", colorbar=True
+    )
