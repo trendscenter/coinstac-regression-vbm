@@ -22,19 +22,16 @@ def parse_for_y(args, y_files, y_labels):
     for file in y_files:
         if file:
             try:
-                y_ = pd.read_csv(os.path.join(args["state"]["baseDirectory"],
-                                              file),
-                                 sep='\t',
-                                 header=None,
-                                 names=['Measure:volume', file],
-                                 index_col=0)
+                y_ = pd.read_csv(
+                    os.path.join(args["state"]["baseDirectory"], file),
+                    sep="\t",
+                    header=None,
+                    names=["Measure:volume", file],
+                    index_col=0,
+                )
                 y_ = y_[~y_.index.str.contains("Measure:volume")]
-                y_ = y_.apply(pd.to_numeric, errors='ignore')
-                y = pd.merge(y,
-                             y_,
-                             how='left',
-                             left_index=True,
-                             right_index=True)
+                y_ = y_.apply(pd.to_numeric, errors="ignore")
+                y = pd.merge(y, y_, how="left", left_index=True, right_index=True)
             except pd.errors.EmptyDataError:
                 continue
             except FileNotFoundError:
@@ -63,7 +60,7 @@ def fsl_parser(args):
     X_df.set_index(X_df.columns[0], inplace=True)
 
     X = X_df[X_labels]
-    X = X.apply(pd.to_numeric, errors='ignore')
+    X = X.apply(pd.to_numeric, errors="ignore")
     X = pd.get_dummies(X, drop_first=True)
     X = X * 1
 
@@ -77,8 +74,7 @@ def fsl_parser(args):
     ixs = X.index.intersection(y.index)
 
     if ixs.empty:
-        raise Exception('No common X and y files at ' +
-                        args["state"]["clientId"])
+        raise Exception("No common X and y files at " + args["state"]["clientId"])
     X = X.loc[ixs]
     y = y.loc[ixs]
 
@@ -86,35 +82,16 @@ def fsl_parser(args):
 
 
 def parse_covar_info(args):
-    """Read covariate information from the UI
-    """
+    """Read covariate information from the UI"""
     input_ = args["input"]
     state_ = args["state"]
     covar_info = input_["covariates"]
 
-
-    covar_df = pd.DataFrame.from_dict(covar_info).T
-
-    covar_data = covar_df.index
-    covar_labels = covar_df.columns
-    covar_types = covar_df.iloc[[2]]
-
-    # Reading in the inpuspec.json
-    # covar_data = covar_info[0][0]
-    # covar_labels = covar_info[1]
-    # covar_types = covar_info[2]
-
-    # Converting the contents to a dataframe
-    #covar_df = pd.DataFrame(covar_data[1:], columns=covar_data[0])
-    #covar_df.set_index(covar_df.columns[0], inplace=True)
-
-    # Selecting only the columns sepcified in the UI
-    # TODO: This could be redundant (check with Ross)
-    covar_info = covar_df[covar_labels]
+    covar_info = pd.DataFrame.from_dict(covar_info, orient="index")
 
     # convert bool to categorical as soon as possible
     for column in covar_info.select_dtypes(bool):
-        covar_info[column] = covar_info[column].astype('object')
+        covar_info[column] = covar_info[column].astype("object")
 
     # Checks for existence of files and if they don't delete row
     for file in covar_info.index:
@@ -123,38 +100,31 @@ def parse_covar_info(args):
 
     # Raise Exception if none of the files are found
     if covar_info.index.empty:
-        raise Exception(
-            'Could not find .nii files specified in the covariates csv')
+        raise Exception("Could not find .nii files specified in the covariates csv")
 
     # convert contents of object columns to lowercase
     for column in covar_info.select_dtypes(object):
-        covar_info[column] = covar_info[column].astype('str').str.lower()
+        covar_info[column] = covar_info[column].astype("str").str.lower()
 
-    return covar_info, covar_types
+    return covar_info
 
 
 def parse_for_categorical(args):
-    """Return unique subsites as a dictionary
-    """
-    X, _ = parse_covar_info(args)
+    """Return unique subsites as a dictionary"""
+    X = parse_covar_info(args)
 
-    site_dict1 = {
-        col: list(X[col].unique())
-        for col in X.select_dtypes(include=object)
-    }
+    site_dict1 = {col: list(X[col].unique()) for col in X.select_dtypes(include=object)}
 
     return site_dict1
 
 
 def create_dummies(data_f, cols, drop_flag=True):
-    """ Create dummy columns
-    """
+    """Create dummy columns"""
     return pd.get_dummies(data_f, columns=cols, drop_first=drop_flag)
 
 
-def perform_encoding(args, data_f, exclude_cols=(' ')):
-    """Perform encoding of various categorical variables
-    """
+def perform_encoding(args, data_f, exclude_cols=(" ")):
+    """Perform encoding of various categorical variables"""
     cols_categorical = [col for col in data_f if data_f[col].dtype == object]
     cols_mono = [col for col in data_f if data_f[col].nunique() == 1]
 
@@ -165,7 +135,7 @@ def perform_encoding(args, data_f, exclude_cols=(' ')):
     cols_nodrop = set(cols_categorical) - set(cols_mono)
     data_f = create_dummies(data_f, cols_nodrop, True)
 
-    data_f = data_f.dropna(axis=0, how='any')
-    data_f = sm.add_constant(data_f, has_constant='add')
+    data_f = data_f.dropna(axis=0, how="any")
+    data_f = sm.add_constant(data_f, has_constant="add")
 
     return data_f

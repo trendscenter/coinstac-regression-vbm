@@ -30,7 +30,7 @@ def one_shot_regression(X, y, lamb):
     Comments:
         Utilizes sklearn.linear_model.Ridge to return a weight vector for the
         regression  model y = w*biased_X + epsilon
-      """
+    """
     #    clf = sklearn.linear_model.Ridge(
     #        alpha=lamb,
     #        fit_intercept=True,
@@ -80,7 +80,7 @@ def sum_squared_error(biased_X, y, beta_vector):
     Comments:
         SSE = ||(y - y_estimate)^2||^2 where ||.|| --> l2-norm
     """
-    return np.linalg.norm(y - y_estimate(biased_X, beta_vector))**2
+    return np.linalg.norm(y - y_estimate(biased_X, beta_vector)) ** 2
 
 
 def sum_squared_total(y):
@@ -95,7 +95,7 @@ def sum_squared_total(y):
     Comments:
         SST = ||y - y_mean||^2 where ||.|| --> l2-norm
     """
-    return np.linalg.norm(y - np.mean(y))**2
+    return np.linalg.norm(y - np.mean(y)) ** 2
 
 
 def r_square(biased_X, y, beta_vector):
