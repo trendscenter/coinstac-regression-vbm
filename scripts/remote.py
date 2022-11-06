@@ -201,9 +201,6 @@ def remote_2(args):
 
     all_local_stats_dicts = cache_["local_stats_dict"]
 
-    #    avg_beta_vector = cache_list["avg_beta_vector"]
-    #    dof_global = cache_list["dof_global"]
-
     avg_beta_vector = loadBin(
         os.path.join(cache_dir, cache_list["avg_beta_vector"]))
     dof_global = cache_list["dof_global"]
@@ -232,19 +229,24 @@ def remote_2(args):
 
     all_local_stats_dicts = dict(zip(sites, all_local_stats_dicts))
 
-    # Block of code to print just global stats
-    global_dict_list = encode_png(args)
-    allfiles = os.listdir(state_["outputDirectory"])
-    os.mkdir( os.path.join(state_["transferDirectory"], "global_stats"))
-    for f in allfiles:
+    # List all output files (global stats)
+    global_files = sorted(os.listdir(state_["outputDirectory"]))
+
+    # move global stats to transfer directory to be moved to local sites
+    os.mkdir(os.path.join(state_["transferDirectory"], "global_stats"))
+    for f in global_files:
       shutil.move(
         os.path.join(state_["outputDirectory"], f),
         os.path.join(state_["transferDirectory"], "global_stats", f))
 
-    # Print Everything
-    keys2 = ["global_stats", "local_stats"]
-    global_stats_files = ["global_stats/" + f for f in list(global_dict_list.keys())]
-    output_dict = { "local_stats": list(global_dict_list.keys()), "global_stats": global_stats_files }
+    # Get list of global pngs files
+    global_png_files = [f"global_stats/{file}" for file in global_files if file.endswith('.png')]
+
+    # Get list of local png files
+    local_png_files = {site: [file for file in site_files if file.endswith('.png')] for site, site_files in all_local_stats_dicts.items()}
+
+    # Gather local and global png files (for display in UI)
+    output_dict = { "local_stats": local_png_files, "global_stats": global_png_files }
 
     computation_output_dict = {"output": output_dict, "success": True}
 

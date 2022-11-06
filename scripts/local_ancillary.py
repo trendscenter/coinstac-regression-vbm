@@ -5,6 +5,7 @@ Created on Wed Apr 11 22:28:11 2018
 
 @author: Harshvardhan
 """
+import os
 import warnings
 
 import numpy as np
@@ -87,7 +88,7 @@ def local_stats_to_dict_numba(args, X, y):
     print_beta_images(args, beta_vector, X_labels)
     print_r2_image(args, rsquared)
 
-    local_stats_list = encode_png(args)
+    local_stats_list = sorted(os.listdir(args["state"]["outputDirectory"]))
 
     return beta_vector, local_stats_list
 
