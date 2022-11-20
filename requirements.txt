@@ -1,4 +1,5 @@
 cycler
+fastparquet
 kiwisolver
 llvmlite
 matplotlib
@@ -8,6 +9,7 @@ numba
 numpy
 pandas
 patsy
+pyarrow
 pyparsing
 python-dateutil
 pytz
@@ -17,3 +19,4 @@ six
 statsmodels
 simplejson
 jsonpickle
+coinstac==0.3.3b0
