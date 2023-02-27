@@ -48,6 +48,16 @@ def local_0(args):
 
     covar_x.to_parquet(os.path.join(cache_dir, "X_df"))
 
+    # write local counts to a text file (to be sent to remote)
+    # TODO: check it saving to the write location
+    counts_file = os.path.join(state_['outputDirectory'], 'local_counts.csv')
+    covar_x.describe().to_csv(counts_file, mode='a', header=True)
+
+    for col in covar_x:
+        if covar_x[col].dtype == object:
+            df = covar_x[col].value_counts()
+            df.to_csv(counts_file, mode='a', header=True)
+
     output_dict = {
         "categorical_dict": categorical_dict,
         "threshold": threshold,
