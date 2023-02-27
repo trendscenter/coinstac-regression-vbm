@@ -4,6 +4,7 @@
 This script includes the local computations for decentralized regression
 (normal equation) including decentralized statistic calculation
 """
+import csv
 import os
 import sys
 import warnings
@@ -49,14 +50,20 @@ def local_0(args):
     covar_x.to_parquet(os.path.join(cache_dir, "X_df"))
 
     # write local counts to a text file (to be sent to remote)
-    # TODO: check it saving to the write location
     counts_file = os.path.join(state_['outputDirectory'], 'local_counts.csv')
+    with open(counts_file, 'a') as fn:
+        fn.write('Output of pd.describe(): \n')    
     covar_x.describe().to_csv(counts_file, mode='a', header=True)
 
-    for col in covar_x:
-        if covar_x[col].dtype == object:
-            df = covar_x[col].value_counts()
-            df.to_csv(counts_file, mode='a', header=True)
+    for column in covar_x:
+        if covar_x[column].dtype == object:
+            with open(counts_file, 'a') as fn:
+                fn.write(f'Counts for column: {column}\n')
+            covar_x[column].value_counts().to_csv(counts_file, mode='a', header=True)
+    
+            with open(counts_file, 'a') as fn:
+                fn.write(f'Mean of groups for column: {column}\n')
+            covar_x.groupby([column]).mean().to_csv(counts_file, mode='a', header=True)
 
     output_dict = {
         "categorical_dict": categorical_dict,
