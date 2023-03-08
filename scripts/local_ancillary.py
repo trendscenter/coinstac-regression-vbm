@@ -154,7 +154,7 @@ def add_site_covariates(args, X):
         if val == 1:
             X.drop(columns=key, inplace=True)
         else:
-            covar_dict = pd.get_dummies(all_sites[key], prefix=key, drop_first=False)
+            covar_dict = pd.get_dummies(all_sites[key], prefix=key, drop_first=True)
             X = merging_globals(args, X, covar_dict, all_sites, key)
 
     X = X.dropna(axis=0, how="any")
