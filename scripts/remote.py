@@ -42,8 +42,6 @@ def remote_0(args):
     df = pd.DataFrame.from_dict(site_info)
     covar_keys, unique_count = return_uniques_and_counts(df)
 
-    # raise Exception(covar_keys, unique_count)
-
     computation_output_dict = {
         "output": {
             "covar_keys": jsonpickle.encode(covar_keys, unpicklable=False),

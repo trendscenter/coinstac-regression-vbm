@@ -42,9 +42,14 @@ def gather_local_stats(X, y):
     tvalues = np.zeros((X.shape[1], size_y))
     rsquared = np.zeros(size_y)
 
+    try:
+        pinv = np.linalg.inv(X.T @ X)
+    except np.linalg.LinAlgError as e:
+        raise Exception(f'Matrix is Singular with a condition number of {np.linalg.cond(X.T @ X)}')
+
     for voxel in prange(size_y):
         curr_y = y[:, voxel]
-        beta_vector = np.linalg.inv(X.T @ X) @ (X.T @ curr_y)
+        beta_vector = pinv @ (X.T @ curr_y)
         params[:, voxel] = beta_vector
 
         curr_y_estimate = np.dot(beta_vector, X.T)
@@ -59,7 +64,7 @@ def gather_local_stats(X, y):
         dof_global = len(curr_y) - len(beta_vector)
 
         MSE = SSE_global / dof_global
-        var_covar_beta_global = MSE * np.linalg.inv(X.T @ X)
+        var_covar_beta_global = MSE * pinv
         se_beta_global = np.sqrt(np.diag(var_covar_beta_global))
         ts_global = beta_vector / se_beta_global
 

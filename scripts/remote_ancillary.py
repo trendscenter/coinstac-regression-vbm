@@ -27,8 +27,9 @@ def return_uniques_and_counts(df):
     keys, count = dict(), dict()
     for index, row in df.iterrows():
         flat_list = [item for sublist in row for item in sublist]
-        keys[index] = set(flat_list)
-        count[index] = len(set(flat_list))
+        unique_items = sorted(set(flat_list))
+        keys[index] = unique_items
+        count[index] = len(unique_items)
 
     return keys, count
 

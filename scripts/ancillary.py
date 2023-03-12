@@ -70,7 +70,7 @@ def print_beta_images(args, avg_beta_vector, covar_labels):
 
     for column in beta_df:
         new_data = np.zeros(mask.shape)
-        new_data[mask.get_data() > 0] = beta_df[column]
+        new_data[mask.get_fdata() > 0] = beta_df[column]
 
         image_string = "beta_" + str(column)
 
@@ -99,7 +99,7 @@ def print_pvals(args, ps_global, ts_global, covar_labels):
 
     for column in p_df:
         new_data = np.zeros(mask.shape)
-        new_data[mask.get_data() > 0] = (
+        new_data[mask.get_fdata() > 0] = (
             -1 * np.log10(p_df[column]) * np.sign(t_df[column])
         )
 
@@ -126,7 +126,7 @@ def print_r2_image(args, beta_df):
         mask = nib.load(os.path.join(args["state"]["cacheDirectory"], MASK))
 
     new_data = np.zeros(mask.shape)
-    new_data[mask.get_data() > 0] = beta_df
+    new_data[mask.get_fdata() > 0] = beta_df
 
     image_string = "r_squared"
 

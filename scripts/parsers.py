@@ -128,11 +128,11 @@ def perform_encoding(args, data_f, exclude_cols=(" ")):
     cols_categorical = [col for col in data_f if data_f[col].dtype == object]
     cols_mono = [col for col in data_f if data_f[col].nunique() == 1]
 
-    # Dropping columsn with unique values
+    # Dropping columns with unique values
     data_f = data_f.drop(columns=cols_mono)
 
     # Creating dummies on non-unique categorical variables
-    cols_nodrop = set(cols_categorical) - set(cols_mono)
+    cols_nodrop = [x for x in cols_categorical if x not in cols_mono]
     data_f = create_dummies(data_f, cols_nodrop, False)
 
     data_f = data_f.dropna(axis=0, how="any")
