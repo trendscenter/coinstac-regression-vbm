@@ -25,11 +25,8 @@ def get_stats_to_dict(col_names, *b):
 def return_uniques_and_counts(df):
     """Return unique-values of the categorical variables and their counts"""
     keys, count = dict(), dict()
-    for index, row in df.iterrows():
-        flat_list = [item for sublist in row for item in sublist]
-        unique_items = sorted(set(flat_list))
-        keys[index] = unique_items
-        count[index] = len(unique_items)
+    keys = df.iloc[:, :].sum(axis=1).apply([set, sorted]).to_dict() # adding all columns
+    count = {k: len(v) for k, v in keys.items()}
 
     return keys, count
 
