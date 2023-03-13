@@ -33,7 +33,7 @@ def mean_and_len_y(y):
 
 
 @jit(nopython=True)
-def gather_local_stats(X, y):
+def gather_local_stats_helper(X, y, pinv):
     """Calculate local statistics"""
     size_y = y.shape[1]
 
@@ -41,11 +41,6 @@ def gather_local_stats(X, y):
     sse = np.zeros(size_y)
     tvalues = np.zeros((X.shape[1], size_y))
     rsquared = np.zeros(size_y)
-
-    try:
-        pinv = np.linalg.inv(X.T @ X)
-    except np.linalg.LinAlgError as e:
-        raise Exception(f'Matrix is Singular with a condition number of {np.linalg.cond(X.T @ X)}')
 
     for voxel in prange(size_y):
         curr_y = y[:, voxel]
@@ -71,6 +66,16 @@ def gather_local_stats(X, y):
         tvalues[:, voxel] = ts_global
 
     return (params, sse, tvalues, rsquared, dof_global)
+
+
+def gather_local_stats(X, y):
+    """Calculate local statistics"""
+    try:
+        pinv = np.linalg.inv(X.T @ X)
+    except np.linalg.LinAlgError:
+        raise Exception(f'X.^T*X matrix at local is Singular.')
+
+    return gather_local_stats_helper(X, y, pinv)
 
 
 def local_stats_to_dict_numba(args, X, y):
