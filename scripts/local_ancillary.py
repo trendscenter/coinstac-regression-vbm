@@ -33,7 +33,7 @@ def mean_and_len_y(y):
 
 
 @jit(nopython=True)
-def gather_local_stats(X, y):
+def gather_local_stats_helper(X, y, pinv):
     """Calculate local statistics"""
     size_y = y.shape[1]
 
@@ -44,7 +44,7 @@ def gather_local_stats(X, y):
 
     for voxel in prange(size_y):
         curr_y = y[:, voxel]
-        beta_vector = np.linalg.inv(X.T @ X) @ (X.T @ curr_y)
+        beta_vector = pinv @ (X.T @ curr_y)
         params[:, voxel] = beta_vector
 
         curr_y_estimate = np.dot(beta_vector, X.T)
@@ -59,13 +59,24 @@ def gather_local_stats(X, y):
         dof_global = len(curr_y) - len(beta_vector)
 
         MSE = SSE_global / dof_global
-        var_covar_beta_global = MSE * np.linalg.inv(X.T @ X)
+        var_covar_beta_global = MSE * pinv
         se_beta_global = np.sqrt(np.diag(var_covar_beta_global))
         ts_global = beta_vector / se_beta_global
 
         tvalues[:, voxel] = ts_global
 
     return (params, sse, tvalues, rsquared, dof_global)
+
+
+def gather_local_stats(X, y):
+    """Calculate local statistics"""
+    try:
+        pinv = np.linalg.inv(X.T @ X)
+    except np.linalg.LinAlgError:
+        cond = np.linalg.cond(X.T @ X);
+        raise Exception(f"X.^T*X matrix at local is Singular with condition number: {cond}")
+
+    return gather_local_stats_helper(X, y, pinv)
 
 
 def local_stats_to_dict_numba(args, X, y):
@@ -154,7 +165,7 @@ def add_site_covariates(args, X):
         if val == 1:
             X.drop(columns=key, inplace=True)
         else:
-            covar_dict = pd.get_dummies(all_sites[key], prefix=key, drop_first=True)
+            covar_dict = pd.get_dummies(all_sites[key], prefix=key, drop_first=False)
             X = merging_globals(args, X, covar_dict, all_sites, key)
 
     X = X.dropna(axis=0, how="any")

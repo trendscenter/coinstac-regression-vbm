@@ -34,10 +34,10 @@ def nifti_to_data(args, X):
     for index, image in enumerate(X.index):
         input_file = os.path.join(args["state"]["baseDirectory"], image)
         if nib.load(input_file).header.get_zooms()[0] == voxel_size:
-            image_data = nib.load(input_file).get_data()
+            image_data = nib.load(input_file).get_fdata()
         else:
             clipped_img = resample_to_img(input_file, mni_image)
-            image_data = clipped_img.get_data()
+            image_data = clipped_img.get_fdata()
 
         a = []
         for slicer in range(mask_dim[-1]):

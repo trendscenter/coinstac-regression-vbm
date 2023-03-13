@@ -42,8 +42,6 @@ def remote_0(args):
     df = pd.DataFrame.from_dict(site_info)
     covar_keys, unique_count = return_uniques_and_counts(df)
 
-    # raise Exception(covar_keys, unique_count)
-
     computation_output_dict = {
         "output": {
             "covar_keys": jsonpickle.encode(covar_keys, unpicklable=False),
@@ -102,7 +100,13 @@ def remote_1(args):
     if np.unique(all_lambdas).shape[0] != 1:
         raise Exception("Unequal lambdas at local sites")
 
-    avg_beta_vector = np.transpose(np.dot(np.linalg.inv(beta_vector_0), beta_vector_1))
+    try:
+        avg_beta_vector = np.transpose(
+            np.dot(np.linalg.inv(beta_vector_0), beta_vector_1)
+        )
+    except np.linalg.LinAlgError:
+        cond = np.linalg.cond(X.T @ X);
+        raise Exception(f"X.^T*X matrix at remote is Singular with condition number: {cond}")
 
     mean_y_local = [input_list[site]["mean_y_local"] for site in input_list]
     count_y_local = [np.array(input_list[site]["count_local"]) for site in input_list]
