@@ -73,7 +73,8 @@ def gather_local_stats(X, y):
     try:
         pinv = np.linalg.inv(X.T @ X)
     except np.linalg.LinAlgError:
-        raise Exception(f"X.^T*X matrix at local is Singular.")
+        cond = np.linalg.cond(X.T @ X);
+        raise Exception(f"X.^T*X matrix at local is Singular with condition number: {cond}")
 
     return gather_local_stats_helper(X, y, pinv)
 

@@ -105,7 +105,8 @@ def remote_1(args):
             np.dot(np.linalg.inv(beta_vector_0), beta_vector_1)
         )
     except np.linalg.LinAlgError:
-        raise Exception("X^T*X matrix at remote is Singular.")
+        cond = np.linalg.cond(X.T @ X);
+        raise Exception(f"X.^T*X matrix at remote is Singular with condition number: {cond}")
 
     mean_y_local = [input_list[site]["mean_y_local"] for site in input_list]
     count_y_local = [np.array(input_list[site]["count_local"]) for site in input_list]
