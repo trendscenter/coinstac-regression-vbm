@@ -11,6 +11,7 @@ import warnings
 
 import pandas as pd
 import simplejson as json
+import numpy as np
 from scripts.ancillary import loadBin, saveBin
 from scripts.local_ancillary import (
     add_site_covariates,
@@ -23,7 +24,7 @@ from scripts.local_ancillary import (
 from scripts.nipype_utils import average_nifti
 from scripts.parsers import parse_for_categorical
 from scripts.rw_utils import write_file
-from scripts.utils import list_recursive
+from scripts.utils import list_recursive, log
 
 warnings.simplefilter("ignore")
 
@@ -89,6 +90,7 @@ def local_1(args):
     X = pd.read_parquet(os.path.join(cache_dir, cache_["covariates"]))
     regularizer_l2 = cache_["lambda"]
 
+    log("args received to local_1 : "+str(args), state_)
     # Local Statistics
     encoded_X, y = vbm_parser(args, X)
     meanY_vector, lenY_vector = mean_and_len_y(y)
@@ -98,6 +100,12 @@ def local_1(args):
     augmented_X = add_site_covariates(args, X)
     X_labels = list(augmented_X.columns)
     biased_X = augmented_X.values.astype("float64")
+
+    log("Encoded array columns : "+str(list(encoded_X.sort_index(axis=1).columns)), state_);
+    log("Augmented array columns : "+str(list(augmented_X.sort_index(axis=1).columns)), state_);
+    log("Encoded and augmented array equality check.. : "+
+            str(np.array_equal(encoded_X.sort_index(axis=1), augmented_X.sort_index(axis=1), equal_nan=False)
+            and np.all(augmented_X.sort_index(axis=1).columns == encoded_X.sort_index(axis=1).columns) ), state_);
 
     XtransposeX_local = multiply(biased_X, biased_X)
     Xtransposey_local = multiply(biased_X, y)

@@ -133,7 +133,7 @@ def perform_encoding(args, data_f, exclude_cols=(" ")):
 
     # Creating dummies on non-unique categorical variables
     cols_nodrop = [x for x in cols_categorical if x not in cols_mono]
-    data_f = create_dummies(data_f, cols_nodrop, False)
+    data_f = create_dummies(data_f, cols_nodrop, True)
 
     data_f = data_f.dropna(axis=0, how="any")
     data_f = sm.add_constant(data_f, has_constant="add")
