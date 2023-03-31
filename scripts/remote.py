@@ -27,7 +27,7 @@ from scripts.nipype_utils import calculate_mask
 from scripts.remote_ancillary import remote_stats, return_uniques_and_counts
 from scripts.rw_utils import read_file
 from scipy import stats
-from scripts.utils import list_recursive
+from scripts.utils import list_recursive, log
 
 warnings.simplefilter("ignore")
 OUTPUT_FROM_LOCAL = "local_output"
@@ -38,6 +38,7 @@ def remote_0(args):
     calculate_mask(args)
     input_ = args["input"]
     site_info = {site: input_[site]["categorical_dict"] for site in input_.keys()}
+    log("args received to remote_0 : "+str(args), args["state"])
 
     df = pd.DataFrame.from_dict(site_info)
     covar_keys, unique_count = return_uniques_and_counts(df)
