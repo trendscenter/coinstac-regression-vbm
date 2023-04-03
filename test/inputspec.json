@@ -1,5 +1,9 @@
 [
   {
+  "reference_columns": {
+    "value":
+    { "site": "IA" }
+  },
   "covariates": {
     "value": {
       "M02108714_swc1t1avg.nii": {
@@ -356,6 +360,10 @@
   }
 },
 {
+  "reference_columns": {
+    "value":
+    { "site": "IA" }
+  },
   "lambda": {
     "fulfilled": true,
     "value": 0

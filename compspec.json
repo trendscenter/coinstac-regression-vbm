@@ -23,6 +23,14 @@
       ]
     },
     "input": {
+      "reference_columns": {
+        "label": "Reference",
+        "default":
+        { "reference_column_name": "reference_value" }
+        ,
+        "type": "object",
+        "source": "owner"
+      },
       "lambda":
       {
         "default": 0,
