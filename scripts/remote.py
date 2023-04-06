@@ -38,7 +38,15 @@ def remote_0(args):
     calculate_mask(args)
     input_ = args["input"]
     site_info = {site: input_[site]["categorical_dict"] for site in input_.keys()}
+    ref_cols = {site: input_[site]["reference_columns"] for site in input_.keys()}
     log("args received to remote_0 : "+str(args), args["state"])
+    log("Reference columns received for dummy encoding: "+ str(ref_cols), args["state"] )
+
+    reference_dict=next(iter(ref_cols.values()))
+    # assert that reference columns/values for dummy encoding are same across all the sites for
+    # the correctness of the decentralized regression. This is always true for coinstac GUI computation.
+    assert all(value == reference_dict  for value in ref_cols.values()), \
+        "Reference values for dummy encoding are not same across all the sites "+ str(ref_cols)
 
     df = pd.DataFrame.from_dict(site_info)
     covar_keys, unique_count = return_uniques_and_counts(df)
@@ -46,6 +54,7 @@ def remote_0(args):
     computation_output_dict = {
         "output": {
             "covar_keys": jsonpickle.encode(covar_keys, unpicklable=False),
+            "reference_columns": reference_dict,
             "global_unique_count": unique_count,
             "mask": "mask.nii",
             "computation_phase": "remote_0",
@@ -274,3 +283,4 @@ def start(PARAM_DICT):
         return remote_2(PARAM_DICT)
     else:
         raise ValueError("Error occurred at Remote")
+
