@@ -16,7 +16,9 @@ from numba import jit, prange
 import scipy as sp
 from scripts.ancillary import encode_png, print_beta_images, print_pvals, print_r2_image
 from scripts.nipype_utils import nifti_to_data
-from scripts.parsers import perform_encoding
+from scripts.parsers import (perform_encoding, adjust_dummy_encoding_columns,
+                             get_default_dummy_encoding_columns)
+from scripts.utils import log
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -158,18 +160,25 @@ def add_site_covariates(args, X):
     input_ = args["input"]
     all_sites = input_["covar_keys"]
     glob_uniq_ct = input_["global_unique_count"]
+    reference_col_dict= input_["reference_columns"]
 
     all_sites = json.loads(all_sites)
+
+    default_col_sortedval_dict = get_default_dummy_encoding_columns(X)
 
     for key, val in glob_uniq_ct.items():
         if val == 1:
             X.drop(columns=key, inplace=True)
+            default_col_sortedval_dict.pop(key)
         else:
-            covar_dict = pd.get_dummies(all_sites[key], prefix=key, drop_first=True)
+            default_col_sortedval_dict[key] = sorted(all_sites[key])[0]
+            covar_dict = pd.get_dummies(all_sites[key], prefix=key, drop_first=False)
             X = merging_globals(args, X, covar_dict, all_sites, key)
 
+    X = adjust_dummy_encoding_columns(X, reference_col_dict, default_col_sortedval_dict)
     X = X.dropna(axis=0, how="any")
     biased_X = sm.add_constant(X, has_constant="add")
+    log("Data columns used for computing global stats: "+str(biased_X.columns), args["state"])
 
     return biased_X
 
@@ -207,3 +216,4 @@ def vbm_parser(args, X):
     encoded_covar_info = perform_encoding(args, X)
 
     return (encoded_covar_info, y_info)
+

@@ -9,10 +9,32 @@ import os
 import warnings
 
 import pandas as pd
-
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import statsmodels.api as sm
+
+from scripts.utils import log
+
+def get_default_dummy_encoding_columns(df):
+    """Returns a dictionary of the first sorted unique-value of all categorical variables."""
+
+    default_col_sortedval_dict={}
+    categorical_cols=df.select_dtypes(include=['object']).columns.tolist()
+    for col_name in categorical_cols:
+        default_col_sortedval_dict[col_name]=sorted(df[col_name].unique())[0]
+
+    return default_col_sortedval_dict
+
+def adjust_dummy_encoding_columns(df, ref_col_val_dict, data_def_col_val_dict):
+    """ If a column is listed in reference_columns in the input for dummy encoding,
+     then the values in this dict is used the reference column from the dataframe,
+     otherwise the default sorted first value is used for a column."""
+
+    for col_name in data_def_col_val_dict.keys():
+        ref_col_val =col_name +"_"+ ref_col_val_dict.get(col_name, data_def_col_val_dict[col_name])
+        df.drop(ref_col_val, inplace=True, axis=1)
+
+    return df
 
 
 def parse_for_y(args, y_files, y_labels):
@@ -122,7 +144,6 @@ def create_dummies(data_f, cols, drop_flag=True):
     """Create dummy columns"""
     return pd.get_dummies(data_f, columns=cols, drop_first=drop_flag)
 
-
 def perform_encoding(args, data_f, exclude_cols=(" ")):
     """Perform encoding of various categorical variables"""
     cols_categorical = [col for col in data_f if data_f[col].dtype == object]
@@ -133,9 +154,14 @@ def perform_encoding(args, data_f, exclude_cols=(" ")):
 
     # Creating dummies on non-unique categorical variables
     cols_nodrop = [x for x in cols_categorical if x not in cols_mono]
-    data_f = create_dummies(data_f, cols_nodrop, True)
+    default_col_sortedval_dict = get_default_dummy_encoding_columns(data_f)
+    data_f = create_dummies(data_f, cols_nodrop, False)
+    data_f = adjust_dummy_encoding_columns( data_f, args["input"]["reference_columns"],
+                                           default_col_sortedval_dict)
 
     data_f = data_f.dropna(axis=0, how="any")
     data_f = sm.add_constant(data_f, has_constant="add")
+    log("Data columns used for computing local stats: "+str(data_f.columns), args["state"])
 
     return data_f
+

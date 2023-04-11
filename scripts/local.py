@@ -45,7 +45,6 @@ def local_0(args):
 
     categorical_dict = parse_for_categorical(args)
     covar_x = average_nifti(args)
-
     write_file(args, args, "cache", "args_file")
 
     covar_x.to_parquet(os.path.join(cache_dir, "X_df"))
@@ -66,8 +65,14 @@ def local_0(args):
                 fn.write(f"Mean of groups for column: {column}\n")
             covar_x.groupby([column]).mean().to_csv(counts_file, mode="a", header=True)
 
+    # converting all the values of the reference columns to lowercase as
+    # all the covariate values are converted to lowercase while parsing
+    # in parsers.parse_covar_info()
+    reference_dict = dict((k, v.lower()) for k,v in args["input"]["reference_columns"].items());
+
     output_dict = {
         "categorical_dict": categorical_dict,
+        "reference_columns": reference_dict,
         "threshold": threshold,
         "voxel_size": voxel_size,
         "avg_nifti": "avg_nifti.nii",
@@ -106,6 +111,11 @@ def local_1(args):
     log("Encoded and augmented array equality check.. : "+
             str(np.array_equal(encoded_X.sort_index(axis=1), augmented_X.sort_index(axis=1), equal_nan=False)
             and np.all(augmented_X.sort_index(axis=1).columns == encoded_X.sort_index(axis=1).columns) ), state_);
+    #log("Data used for local_stats : "+encoded_X.to_string(), state_)
+    #log("Data used for globals stats: "+augmented_X.to_string(), state_)
+
+    log("size of biased_X : "+ str(biased_X.shape), state_);
+    log("size of y : "+ str(y.shape), state_);
 
     XtransposeX_local = multiply(biased_X, biased_X)
     Xtransposey_local = multiply(biased_X, y)
@@ -127,7 +137,8 @@ def local_1(args):
         "X_labels": X_labels,
         "lambda": regularizer_l2,
     }
-    cache_dict = {"covariates": "X.npy", "dependents": "y.npy"}
+    cache_dict = {"covariates": "X.npy", "dependents": "y.npy",
+                  "reference_columns": args["input"]["reference_columns"]}
 
     write_file(args, output_dict, "output", "local_output")
 
