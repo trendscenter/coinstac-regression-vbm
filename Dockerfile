@@ -12,4 +12,4 @@ RUN pip install -r requirements.txt --force-reinstall
 # Copy the current directory contents into the container
 COPY . /computation
 
-CMD ["python", "entry.py"]
+CMD ["python", "/computation/entry.py"]
