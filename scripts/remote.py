@@ -111,11 +111,14 @@ def remote_1(args):
         raise Exception("Unequal lambdas at local sites")
 
     try:
+        #Add lambda's
+        beta_vector_0 = beta_vector_0 + np.unique(all_lambdas) * np.eye(beta_vector_0.shape[0])
+
         avg_beta_vector = np.transpose(
             np.dot(np.linalg.inv(beta_vector_0), beta_vector_1)
         )
     except np.linalg.LinAlgError:
-        cond = np.linalg.cond(X.T @ X);
+        cond = np.linalg.cond(beta_vector_0);
         raise Exception(f"X.^T*X matrix at remote is Singular with condition number: {cond}")
 
     mean_y_local = [input_list[site]["mean_y_local"] for site in input_list]

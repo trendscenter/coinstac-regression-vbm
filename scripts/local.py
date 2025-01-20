@@ -39,6 +39,7 @@ def local_0(args):
     voxel_size = input_["voxel_size"]
     lamb = args["input"]["lambda"]
 
+    log(f'inputspec received by local_0() :\n {str(input_)}\n\n', state_)
     # TODO: voxel size cannot be 0 (check how to handle this)
     if voxel_size == 0:
         voxel_size = 1

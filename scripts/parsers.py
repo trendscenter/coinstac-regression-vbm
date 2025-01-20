@@ -8,6 +8,7 @@ Created on Wed Mar 21 19:25:26 2018
 import os
 import warnings
 
+import numpy as np
 import pandas as pd
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -110,6 +111,8 @@ def parse_covar_info(args):
     covar_info = input_["covariates"]
 
     covar_info = pd.DataFrame.from_dict(covar_info, orient="index")
+    # Creating this to catch nan in numeric columns
+    temp_df = covar_info.apply(pd.to_numeric, errors='ignore')
 
     # convert bool to categorical as soon as possible
     for column in covar_info.select_dtypes(bool):
@@ -127,6 +130,19 @@ def parse_covar_info(args):
     # convert contents of object columns to lowercase
     for column in covar_info.select_dtypes(object):
         covar_info[column] = covar_info[column].astype("str").str.lower()
+
+    #Remove rows with empty or nan values
+
+    rows_with_nan_cells = np.where(pd.isnull(temp_df))[0].tolist()
+    rows_with_blank_cells = np.where(temp_df.applymap(lambda x: x == ''))[0].tolist()
+
+    ignore_rows = list(set(rows_with_nan_cells).union(rows_with_blank_cells))
+    if len(ignore_rows) > 0:
+        log(f'Ignoring these subjects as they have empty or nan covariate values: '
+               f'{str(list(covar_info.index[ignore_rows]))}', args["state"])
+
+        # Dropping subjects with empty or nan covariate values
+        covar_info.drop(covar_info.index[ignore_rows], inplace=True)
 
     return covar_info
 
