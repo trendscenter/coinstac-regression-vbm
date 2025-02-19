@@ -111,28 +111,11 @@ def parse_covar_info(args):
     covar_info = input_["covariates"]
 
     covar_info = pd.DataFrame.from_dict(covar_info, orient="index")
+
     # Creating this to catch nan in numeric columns
     temp_df = covar_info.apply(pd.to_numeric, errors='ignore')
 
-    # convert bool to categorical as soon as possible
-    for column in covar_info.select_dtypes(bool):
-        covar_info[column] = covar_info[column].astype("object")
-
-    # Checks for existence of files and if they don't delete row
-    for file in covar_info.index:
-        if not os.path.isfile(os.path.join(state_["baseDirectory"], file)):
-            covar_info.drop(file, inplace=True)
-
-    # Raise Exception if none of the files are found
-    if covar_info.index.empty:
-        raise Exception("Could not find .nii files specified in the covariates csv")
-
-    # convert contents of object columns to lowercase
-    for column in covar_info.select_dtypes(object):
-        covar_info[column] = covar_info[column].astype("str").str.lower()
-
     #Remove rows with empty or nan values
-
     rows_with_nan_cells = np.where(pd.isnull(temp_df))[0].tolist()
     rows_with_blank_cells = np.where(temp_df.applymap(lambda x: x == ''))[0].tolist()
 
@@ -143,6 +126,31 @@ def parse_covar_info(args):
 
         # Dropping subjects with empty or nan covariate values
         covar_info.drop(covar_info.index[ignore_rows], inplace=True)
+
+    # Checks for existence of files and if they don't delete row
+    for file in covar_info.index:
+        if not os.path.isfile(os.path.join(state_["baseDirectory"], file)):
+            covar_info.drop(file, inplace=True)
+
+    # Raise Exception if none of the files are found
+    if covar_info.index.empty:
+        raise Exception("Could not find .nii files specified in the covariates csv")
+
+    # convert columns to their original datatypes provided in the input
+    for column, value in input_["covariates"][covar_info.index[0]].items():
+        column_type_in_input = type(value).__name__
+        if column_type_in_input in ['int', 'float']:
+            covar_info[column] = covar_info[column].astype(column_type_in_input)
+        else:
+            covar_info[column] = covar_info[column].astype("object")
+
+    # convert bool to categorical as soon as possible
+    for column in covar_info.select_dtypes(bool):
+        covar_info[column] = covar_info[column].astype("object")
+
+    # convert contents of object columns to lowercase
+    for column in covar_info.select_dtypes(object):
+        covar_info[column] = covar_info[column].astype("str").str.lower()
 
     return covar_info
 
